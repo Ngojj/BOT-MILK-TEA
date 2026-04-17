@@ -11,6 +11,11 @@ function buildSystemInstruction(context = {}) {
     "item_code, item_name, size(M|L|null), quantity(number|null), topping_codes(array), topping_names(array). " +
     "Khong them van ban khac ngoai JSON. " +
     "Phan loai intent theo nghia, uu tien ngu canh stage. " +
+    "Can hieu tieng viet tu nhien, viet tat, slang va typo nhe. " +
+    "Vi du ten mon: 'cf den', 'ca phe den', 'cafe den' deu la cung mot mon. " +
+    "Vi du xac nhan: 'roi', 'ok roi', 'chuan', 'duoc' => confirm. " +
+    "Vi du tu choi/khong tiep tuc: 'khong can', 'khong them', 'thoi' => deny. " +
+    "Neu nhan ra ten mon thi phai tra ve item_name hoac item_code phu hop, khong de unknown. " +
     "Vi du intent=confirm: dong y, dung, oke, okela, chuan, xac nhan, yup. " +
     "Vi du intent=deny: khong, chua dung, khong them, thoi, no."
   );
