@@ -4,15 +4,15 @@ function oneOf(options) {
 
 function askSize() {
   return oneOf([
-    "Bạn muốn size M hay L nè? 🧋",
-    "Món này bạn lấy size M hay L ạ?",
-    "Cho mình xin size giúp bạn: M hay L?"
+    "Mình lên món ngay nè, bạn chốt size M hoặc L giúp mình 🧋",
+    "Món này bạn chọn size M hay L để mình làm liền nha.",
+    "Cho mình xin size (M/L), mình thêm vào đơn ngay cho bạn."
   ]);
 }
 
 function askQuantity() {
   return oneOf([
-    "Bạn lấy mấy ly nhé? Ví dụ `2 ly` 👌",
+    "Bạn lấy mấy ly nhé? 👌",
     "Số lượng bạn muốn là bao nhiêu ạ?",
     "Cho mình xin số lượng giúp bạn nha."
   ]);
@@ -20,25 +20,25 @@ function askQuantity() {
 
 function askToppingMissing() {
   return oneOf([
-    "Bạn muốn thêm topping nào không? Nếu có, nhắn như `thêm TOP04` hoặc `thêm thạch xanh`. Nếu không thì nhắn `không topping` nhé.",
-    "Bạn có thêm topping gì không nè? Ví dụ `thêm thạch xanh`, còn không thì nhắn `không topping` giúp mình.",
-    "Mình thêm topping luôn cho bạn nha? Nếu không thêm thì nhắn `không topping`."
+    "Bạn muốn thêm topping gì cho món này không ạ?",
+    "Bạn dặn topping giúp mình nhé, mình cập nhật ngay cho bạn.",
+    "Món này bạn muốn thêm topping gì nữa nè?"
   ]);
 }
 
 function itemAdded(last) {
   return oneOf([
-    `Mình thêm ${last.name} size ${last.size} x${last.quantity} rồi nha. Bạn muốn thêm món nữa không? (có/không)`,
-    `Đã lên đơn ${last.name} size ${last.size} x${last.quantity} ✅ Bạn có muốn thêm món khác không? (có/không)`,
-    `${last.name} size ${last.size} x${last.quantity} đã được thêm. Mình thêm món nữa cho bạn không? (có/không)`
+    `Mình đã thêm ${last.name} size ${last.size} x${last.quantity} ✅ Bạn muốn thêm món gì nữa cứ nhắn tiếp giúp mình nha.`,
+    `${last.name} size ${last.size} x${last.quantity} đã vào giỏ rồi nè. Bạn cần thêm món nào mình lên tiếp luôn.`,
+    `Okie, ${last.name} size ${last.size} x${last.quantity} đã được thêm. Mình đợi món tiếp theo của bạn nhé.`
   ]);
 }
 
 function askToppingClarify() {
   return oneOf([
-    "Mình chưa rõ topping bạn muốn thêm cho món vừa rồi. Bạn nhắn giúp mình kiểu `thêm TOP04` hoặc `thêm thạch xanh` nhé.",
-    "Bạn nói rõ topping giúp mình nha, ví dụ `thêm TOP04` hoặc `thêm thạch xanh`.",
-    "Mình chưa bắt được tên topping, bạn nhắn lại ngắn gọn kiểu `thêm thạch xanh` giúp mình nhé."
+    "Mình chưa rõ topping bạn muốn thêm cho món vừa rồi, bạn nhắn lại giúp mình nhé.",
+    "Bạn nói rõ giúp mình topping cần thêm để mình cập nhật chuẩn hơn nha.",
+    "Mình chưa bắt được tên topping, bạn nhắn lại giúp mình một lần nữa nhé."
   ]);
 }
 
@@ -60,41 +60,41 @@ function greetingOpen() {
 
 function askItemName() {
   return oneOf([
-    "Bạn nhắn tên món hoặc mã món giúp mình nhé (ví dụ: TS01).",
-    "Cho mình xin tên món/mã món bạn muốn gọi nha.",
-    "Bạn chọn món giúp mình bằng tên hoặc mã (ví dụ: TS01) nhé."
+    "Bạn gọi món nào thì nhắn mình tên món giúp mình nha.",
+    "Cho mình biết món bạn muốn gọi để mình lên đơn nhé.",
+    "Bạn muốn dùng món gì, nhắn mình để mình thêm vào đơn liền nè."
   ]);
 }
 
 function askAddMore() {
   return oneOf([
-    "Bạn muốn thêm món khác không ạ? Trả lời `có` hoặc `không` nhé.",
-    "Mình thêm tiếp món nữa cho bạn không? (`có`/`không`)",
-    "Bạn có muốn gọi thêm món nào nữa không? (`có` hoặc `không`)"
+    "Bạn muốn thêm món nào nữa thì nhắn luôn giúp mình nhé.",
+    "Mình đang đợi món tiếp theo của bạn nè.",
+    "Nếu cần gọi thêm, bạn nhắn món tiếp theo để mình lên đơn luôn nha."
   ]);
 }
 
 function askConfirmOrder() {
   return oneOf([
-    "Bạn xem giúp mình: đơn này ổn chưa nè? (đúng/chưa đúng)",
-    "Mình chốt đơn này luôn được chưa bạn? (đúng/chưa đúng)",
-    "Đơn này đúng ý bạn chưa ạ? (đúng/chưa đúng)"
+    "Bạn xem giúp mình, nếu ổn thì nhắn `đúng`, cần sửa thì nhắn `chưa đúng` nha.",
+    "Mình gửi bạn bản chốt đơn rồi nè: ok thì nhắn `đúng`, muốn chỉnh thì nhắn `chưa đúng`.",
+    "Mình chờ bạn xác nhận đơn: nhắn `đúng` để tiếp tục, hoặc `chưa đúng` để mình sửa ngay."
   ]);
 }
 
 function askName() {
   return oneOf([
-    "Cho mình xin tên người nhận giúp bạn nhé 😊",
-    "Mình xin tên người nhận để chốt đơn nha.",
-    "Bạn cho mình tên người nhận được không ạ?"
+    "Mình xin tên người nhận để chốt đơn cho chuẩn nhé 😊",
+    "Bạn gửi mình tên người nhận giúp mình nha.",
+    "Cho mình tên người nhận, mình đi tiếp bước xác nhận liền nè."
   ]);
 }
 
 function askPhone() {
   return oneOf([
-    "Bạn cho mình xin số điện thoại nhận hàng nhé 📱",
-    "Cho mình xin SĐT người nhận giúp bạn nha.",
-    "Mình cần số điện thoại để xác nhận đơn, bạn gửi giúp mình nhé."
+    "Bạn gửi mình số điện thoại nhận hàng giúp mình nhé 📱",
+    "Cho mình xin SĐT người nhận để tài xế liên hệ nhanh nha.",
+    "Mình cần số điện thoại người nhận, bạn nhắn giúp mình là xong bước này."
   ]);
 }
 
@@ -108,41 +108,41 @@ function invalidPhone() {
 
 function askAddress() {
   return oneOf([
-    "Bạn nhận giao tận nơi hay tự đến lấy ạ? Nếu giao tận nơi, bạn gửi địa chỉ giúp mình.",
-    "Bạn muốn giao tận nơi hay tự đến lấy nè? Nếu giao thì nhắn địa chỉ giúp mình nhé.",
-    "Mình giao tận nơi hoặc bạn ghé lấy đều được. Nếu giao, bạn gửi địa chỉ giúp mình nha."
+    "Bạn muốn giao tận nơi hay tự đến lấy để mình chuẩn bị đúng giúp bạn ạ?",
+    "Mình nhận cả giao tận nơi và tự lấy, bạn cho mình biết cách nhận hàng nhé.",
+    "Bạn chọn giúp mình hình thức nhận hàng: giao tận nơi hay ghé lấy tại quán."
   ]);
 }
 
 function askAddressRetry() {
   return oneOf([
-    "Mình chưa nhận được địa chỉ giao hàng rõ ràng. Bạn gửi lại giúp mình theo dạng `số nhà, đường, phường/xã, quận/huyện` nhé.",
-    "Địa chỉ này chưa đủ rõ để giao hàng. Bạn ghi lại giúp mình kiểu `số nhà, đường, phường/xã, quận/huyện` nha.",
-    "Mình cần địa chỉ cụ thể hơn một chút để giao đúng chỗ. Bạn gửi lại giúp mình nhé."
+    "Mình cần địa chỉ rõ hơn để giao đúng chỗ, bạn gửi lại giúp mình nhé.",
+    "Địa chỉ hơi ngắn nên mình chưa chốt giao được, bạn bổ sung chi tiết hơn giúp mình nha.",
+    "Bạn gửi lại địa chỉ cụ thể hơn một chút để mình lên đơn giao chính xác nhé."
   ]);
 }
 
 function askNote() {
   return oneOf([
-    "Bạn có ghi chú thêm không? (ít đường, ít đá, dị ứng...). Nếu không có thì nhắn `không` nhé.",
-    "Bạn có dặn gì thêm cho quán không nè? Không có thì nhắn `không` giúp mình.",
-    "Có ghi chú gì cho món không bạn? Nếu không thì nhắn `không` nhé."
+    "Bạn dặn thêm giúp mình nhé (ví dụ: ít đường, ít đá, dị ứng...).",
+    "Bạn có lưu ý gì cho quán cứ nhắn luôn, mình ghi nhận đầy đủ cho bạn.",
+    "Mình nhận ghi chú ở bước này, bạn chia sẻ thêm để quán làm đúng ý nha."
   ]);
 }
 
 function askPayment() {
   return oneOf([
-    "Bạn thanh toán khi nhận hàng (COD) hay chuyển khoản trước ạ? 💳",
-    "Bạn chọn hình thức thanh toán giúp mình: `COD` hay `chuyển khoản` nhé.",
-    "Mình chốt thanh toán nè: bạn chọn `COD` hay `chuyển khoản` ạ?"
+    "Bạn muốn thanh toán khi nhận hàng hay chuyển khoản trước ạ? 💳",
+    "Mình qua bước thanh toán nè, bạn cho mình chọn thanh toán giúp mình nhé.",
+    "Đến bước thanh toán rồi, bạn chọn cách nào tiện cho bạn nhất nha."
   ]);
 }
 
 function askPaymentChoice() {
   return oneOf([
-    "Bạn chọn giúp mình một trong 2 cách: `COD` hoặc `chuyển khoản` nhé.",
-    "Mình nhận 2 lựa chọn thôi: `COD` hoặc `chuyển khoản` nha.",
-    "Bạn nhắn `COD` hoặc `chuyển khoản` để mình chốt thanh toán nhé."
+    "Mình chưa xác định được hình thức thanh toán, bạn nhắn lại giúp mình nhé.",
+    "Bạn cho mình biết bạn muốn thanh toán khi nhận hàng hay chuyển khoản nha.",
+    "Mình cần xác nhận lại cách thanh toán để chốt đơn cho bạn."
   ]);
 }
 

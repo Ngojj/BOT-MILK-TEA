@@ -223,7 +223,7 @@ async function handleMessage(customerId, message) {
     if (isAffirmative(rawText) || hint?.intent === "order") {
       session.stage = STAGE.COLLECTING_ITEM;
       return finalize({
-        reply: "Bạn nhắn tên món/mã món + size + số lượng + topping giúp mình nhé. Ví dụ: `TS01 size L x2 thêm TOP06`",
+        reply: "Mình sẵn sàng lên món tiếp theo nè, bạn nhắn món bạn muốn gọi giúp mình nhé.",
         stage: session.stage
       });
     }
