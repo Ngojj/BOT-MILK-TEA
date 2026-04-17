@@ -88,6 +88,19 @@ async function testAddressValidationFlow() {
   resetSession(id);
 }
 
+async function testConfirmOrderAcceptsDungFlow() {
+  const id = `t-confirm-dung-${Date.now()}`;
+
+  await handleMessage(id, "CF04 size M x1");
+  await handleMessage(id, "khong topping");
+  await handleMessage(id, "khong");
+  const res = await handleMessage(id, "dung");
+
+  assert.equal(res.stage, STAGE.COLLECT_CUSTOMER_NAME);
+
+  resetSession(id);
+}
+
 async function testCancelAnyStageFlow() {
   const id = `t-cancel-${Date.now()}`;
 
@@ -261,6 +274,7 @@ async function testAccentedAddressPrefixSuffixCleanedFlow() {
 async function main() {
   await runCase("flow COD tu den lay qua tung stage", testCodPickupFlow);
   await runCase("validate dia chi: input mo ho se bi hoi lai", testAddressValidationFlow);
+  await runCase("xac nhan don bang tu dung se qua buoc nhap ten", testConfirmOrderAcceptsDungFlow);
   await runCase("co the huy don o bat ky buoc nao", testCancelAnyStageFlow);
   await runCase("bo sung topping cho mon vua them o ASK_ADD_MORE", testUpdateLastItemToppingFlow);
   await runCase(

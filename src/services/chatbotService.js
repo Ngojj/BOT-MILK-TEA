@@ -127,7 +127,7 @@ async function handleMessage(customerId, message) {
     return finalize({ reply: "Bạn nhắn giúp mình nội dung cần hỗ trợ nhé 😊", stage: session.stage });
   }
 
-  const hint = await analyzeCustomerMessage(rawText);
+  const hint = await analyzeCustomerMessage(rawText, { stage: session.stage });
   const text = buildSystemInput(rawText, hint);
   const normalizedRaw = normalizeText(rawText);
   const contextualAddress = extractAddressFromMessage(rawText);
@@ -235,7 +235,8 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.CONFIRM_ORDER) {
-    if (isAffirmative(rawText) || hint?.intent === "confirm") {
+    const isSimpleConfirm = /^(dung|đung|đúng)$/.test(rawText.trim().toLowerCase());
+    if (isSimpleConfirm || isAffirmative(rawText) || hint?.intent === "confirm") {
       session.stage = STAGE.COLLECT_CUSTOMER_NAME;
       return finalize({ reply: askName(), stage: session.stage });
     }

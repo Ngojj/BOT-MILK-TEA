@@ -1,16 +1,26 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
-async function callGemini(message) {
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-  const systemInstruction =
+function buildSystemInstruction(context = {}) {
+  const stage = context.stage || "unknown";
+  return (
     "Ban la bo phan phan tich tin nhan dat do uong. " +
+    `Ngu canh hien tai: stage=${stage}. ` +
     "Tra ve DUY NHAT JSON co cac truong: " +
     "intent(menu|order|confirm|deny|provide_info|unknown), " +
     "item_code, item_name, size(M|L|null), quantity(number|null), topping_codes(array), topping_names(array). " +
-    "Khong them van ban khac ngoai JSON.";
+    "Khong them van ban khac ngoai JSON. " +
+    "Phan loai intent theo nghia, uu tien ngu canh stage. " +
+    "Vi du intent=confirm: dong y, dung, oke, okela, chuan, xac nhan, yup. " +
+    "Vi du intent=deny: khong, chua dung, khong them, thoi, no."
+  );
+}
+
+async function callGemini(message, context = {}) {
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const systemInstruction = buildSystemInstruction(context);
 
   const body = {
     system_instruction: {
@@ -48,11 +58,11 @@ async function callGemini(message) {
   }
 }
 
-async function analyzeCustomerMessage(message) {
+async function analyzeCustomerMessage(message, context = {}) {
   if (!GEMINI_API_KEY || !message) return null;
 
   try {
-    const parsed = await callGemini(message);
+    const parsed = await callGemini(message, context);
     if (!parsed || typeof parsed !== "object") return null;
 
     return {
