@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const fs = require("node:fs/promises");
 const {
   handleMessage,
   resetSession,
@@ -189,9 +190,51 @@ async function sendTelegramQrPhoto(token, chatId, qrCode, caption) {
   return { ok: true };
 }
 
+async function sendTelegramPhotoFile(token, chatId, filePath, caption) {
+  if (!filePath) return { ok: true };
+  let fileBuffer;
+  try {
+    fileBuffer = await fs.readFile(filePath);
+  } catch (_error) {
+    return { ok: false, detail: `Khong doc duoc file anh menu: ${filePath}` };
+  }
+
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("photo", new Blob([fileBuffer], { type: "image/png" }), "menu.png");
+
+  const telegramUrl = `https://api.telegram.org/bot${token}/sendPhoto`;
+  const telegramRes = await fetch(telegramUrl, {
+    method: "POST",
+    body: form
+  });
+
+  if (!telegramRes.ok) {
+    return {
+      ok: false,
+      detail: await telegramRes.text().catch(() => "")
+    };
+  }
+  return { ok: true };
+}
+
 async function sendTelegramResult({ token, chatId, result }) {
   const textResult = await sendTelegramMessage(token, chatId, result?.reply || "");
   if (!textResult.ok) return textResult;
+
+  const photoFilePath = result?.telegram?.photoFilePath;
+  const photoCaption = result?.telegram?.photoCaption;
+  if (photoFilePath) {
+    const sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+    if (!sentPhoto.ok) {
+      const fallbackText = result?.telegram?.fallbackText;
+      if (fallbackText) {
+        return sendTelegramMessage(token, chatId, fallbackText);
+      }
+      return sentPhoto;
+    }
+  }
 
   const qrCode = result?.telegram?.photoQrCode;
   const caption = result?.telegram?.photoCaption;

@@ -1,4 +1,5 @@
 const QRCode = require("qrcode");
+const fs = require("node:fs/promises");
 
 function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
   let offset = 0;
@@ -50,10 +51,22 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
       }
 
       const qrCode = normalizedResult.telegram?.photoQrCode;
-      const caption = normalizedResult.telegram?.photoCaption;
+      const photoFilePath = normalizedResult.telegram?.photoFilePath;
+      const photoCaption = normalizedResult.telegram?.photoCaption;
+      if (photoFilePath) {
+        const sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+        if (!sentPhoto.ok) {
+          const fallbackText = normalizedResult.telegram?.fallbackText;
+          if (fallbackText) {
+            await sendTelegramMessage(token, chatId, fallbackText);
+          } else {
+            console.error("[telegram] sendPhoto failed:", sentPhoto.status, sentPhoto.detail);
+          }
+        }
+      }
       if (!qrCode) continue;
 
-      const sentPhoto = await sendTelegramQrPhoto(token, chatId, qrCode, caption);
+      const sentPhoto = await sendTelegramQrPhoto(token, chatId, qrCode, photoCaption);
       if (!sentPhoto.ok) {
         console.error("[telegram] sendPhoto failed:", sentPhoto.status, sentPhoto.detail);
       }
@@ -121,6 +134,34 @@ async function sendTelegramQrPhoto(token, chatId, qrCode, caption) {
   form.append("chat_id", String(chatId));
   form.append("caption", caption || "QR thanh toán");
   form.append("photo", new Blob([pngBuffer], { type: "image/png" }), "payos-qr.png");
+
+  const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: "POST",
+    body: form
+  });
+
+  if (!sendRes.ok) {
+    return {
+      ok: false,
+      status: sendRes.status,
+      detail: await sendRes.text().catch(() => "")
+    };
+  }
+  return { ok: true, status: 200 };
+}
+
+async function sendTelegramPhotoFile(token, chatId, filePath, caption) {
+  let fileBuffer;
+  try {
+    fileBuffer = await fs.readFile(filePath);
+  } catch (_error) {
+    return { ok: false, status: 500, detail: `Khong doc duoc file anh menu: ${filePath}` };
+  }
+
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("photo", new Blob([fileBuffer], { type: "image/png" }), "menu.png");
 
   const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
     method: "POST",

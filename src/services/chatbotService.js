@@ -10,7 +10,7 @@ const {
   createPayOSOrderCode,
   createPaymentLink
 } = require("./payosService");
-const { APP_BASE_URL, STAGE } = require("./chatbot/constants");
+const { APP_BASE_URL, MENU_IMAGE_PATH, STAGE } = require("./chatbot/constants");
 const {
   getSession,
   getCachedSession,
@@ -46,6 +46,7 @@ const {
   invalidPhone,
   askAddress,
   askAddressRetry,
+  askDeliveryAddress,
   askNote,
   askPayment,
   askPaymentChoice,
@@ -164,7 +165,15 @@ async function handleMessage(customerId, message) {
   }
 
   if (normalizedRaw === "menu" || normalizedRaw.includes("xem menu") || hint?.intent === "menu") {
-    return finalize({ reply: formatMenu(), stage: session.stage });
+    return finalize({
+      reply: "Mình gửi menu bằng ảnh ở dưới để bạn xem nhanh nha 👇",
+      telegram: {
+        photoFilePath: MENU_IMAGE_PATH,
+        photoCaption: "📋 MENU HIỆN TẠI",
+        fallbackText: formatMenu()
+      },
+      stage: session.stage
+    });
   }
 
   if (normalizedRaw === "reset" || normalizedRaw.includes("lam lai don moi")) {
@@ -313,6 +322,13 @@ async function handleMessage(customerId, message) {
       });
     }
 
+    if (/\b(giao|ship)\b/.test(normalizedRaw2) && !isLikelyAddressText(rawText)) {
+      return finalize({
+        reply: askDeliveryAddress(),
+        stage: session.stage
+      });
+    }
+
     const hasAddressKeyword =
       /\b(so|duong|hem|ngo|ngach|ap|thon|khu|quan|huyen|phuong|xa|tp|tinh|p\\.|q\\.|block|toa|chung cu)\b/.test(
         normalizedRaw2
@@ -328,7 +344,7 @@ async function handleMessage(customerId, message) {
       });
     }
 
-    session.customer.address = rawText;
+    session.customer.address = cleanAddressCandidate(rawText) || rawText;
     session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
     return finalize({
       reply: askNote(),

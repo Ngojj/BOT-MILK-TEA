@@ -116,9 +116,17 @@ function askAddress() {
 
 function askAddressRetry() {
   return oneOf([
-    "Mình cần địa chỉ rõ hơn để giao đúng chỗ, bạn gửi lại giúp mình nhé.",
-    "Địa chỉ hơi ngắn nên mình chưa chốt giao được, bạn bổ sung chi tiết hơn giúp mình nha.",
-    "Bạn gửi lại địa chỉ cụ thể hơn một chút để mình lên đơn giao chính xác nhé."
+    "Bạn gửi mình địa chỉ nhận hàng chi tiết (số nhà + tên đường) để mình giao chính xác nhé.",
+    "Cho mình xin địa chỉ cụ thể hơn một chút để tài xế dễ tìm bạn nha.",
+    "Bạn nhắn giúp mình địa chỉ đầy đủ hơn để mình chốt giao nhanh cho bạn nhé."
+  ]);
+}
+
+function askDeliveryAddress() {
+  return oneOf([
+    "Oke bạn, cho mình xin địa chỉ giao hàng cụ thể (số nhà + tên đường) nhé.",
+    "Mình nhận giao tận nơi nha, bạn gửi địa chỉ chi tiết giúp mình để chốt đơn.",
+    "Chuẩn luôn, bạn nhắn địa chỉ giao hàng đầy đủ để mình lên đơn giao ngay."
   ]);
 }
 
@@ -126,7 +134,7 @@ function askNote() {
   return oneOf([
     "Bạn dặn thêm giúp mình nhé (ví dụ: ít đường, ít đá, dị ứng...).",
     "Bạn có lưu ý gì cho quán cứ nhắn luôn, mình ghi nhận đầy đủ cho bạn.",
-    "Mình nhận ghi chú ở bước này, bạn chia sẻ thêm để quán làm đúng ý nha."
+    "Nếu không có ghi chú thêm, bạn chỉ cần nhắn `không` là được nha."
   ]);
 }
 
@@ -227,6 +235,7 @@ module.exports = {
   invalidPhone,
   askAddress,
   askAddressRetry,
+  askDeliveryAddress,
   askNote,
   askPayment,
   askPaymentChoice,
