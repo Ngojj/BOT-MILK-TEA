@@ -1,4 +1,4 @@
-const { extractQuantity, extractSize } = require("../../utils/text");
+const { extractQuantity, extractSize, isNegative } = require("../../utils/text");
 const { STAGE } = require("./constants");
 const {
   askSize,
@@ -48,11 +48,15 @@ function collectMissingItemFields(session, text, hint) {
   }
 
   if (draft.toppings === null) {
+    if (isNegative(text)) {
+      draft.toppings = [];
+    } else {
     const tops = parseToppingsFromHint(hint, draft.quantity) ?? parseToppings(text, draft.quantity);
     if (tops === null) {
       return askToppingMissing();
     }
     draft.toppings = tops;
+    }
   }
 
   finalizeDraftToCart(session);

@@ -142,6 +142,21 @@ async function testNegativeAfterAmbiguousAddMoreStillGoesConfirmFlow() {
   resetSession(id);
 }
 
+async function testKhongAtToppingPromptMeansNoToppingFlow() {
+  const id = `t-no-top-${Date.now()}`;
+
+  await handleMessage(id, "cho toi mot ca phe den");
+  await handleMessage(id, "L");
+  const res = await handleMessage(id, "khong");
+
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  const session = getSession(id);
+  assert.equal(session.cart.length, 1);
+  assert.equal(session.cart[0].toppings.length, 0);
+
+  resetSession(id);
+}
+
 async function testAddressCapturedFromFirstMessageFlow() {
   const id = `t-addr-first-${Date.now()}`;
 
@@ -252,6 +267,7 @@ async function main() {
     "dang o collecting item nhung nguoi dung noi khong them nua thi chuyen sang confirm",
     testNegativeAfterAmbiguousAddMoreStillGoesConfirmFlow
   );
+  await runCase("tra loi khong o buoc topping duoc xem la khong topping", testKhongAtToppingPromptMeansNoToppingFlow);
   await runCase("nho dia chi duoc noi ngay tu cau dat mon dau tien", testAddressCapturedFromFirstMessageFlow);
   await runCase("lam sach dia chi lay tu cau dat mon", testAddressCandidateIsCleanedFlow);
   await runCase("tran chau den khong bi match them tran chau trang", testToppingDenKhongBiMatchTrangFlow);
