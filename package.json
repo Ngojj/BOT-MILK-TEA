@@ -1,0 +1,24 @@
+{
+  "name": "milk-tea-chatbot-backend",
+  "version": "1.0.0",
+  "description": "Backend Node.js cho chatbot quan tra sua theo prompt",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node tests/run-tests.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@payos/node": "^2.0.5",
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

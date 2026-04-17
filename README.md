@@ -143,3 +143,33 @@ npm test
   - validate dia chi (input mo ho bi hoi lai)
   - huy don toan cuc o bat ky stage
   - bo sung topping cho mon vua them trong `ASK_ADD_MORE`
+
+## 10) Chay voi n8n (Option 1 - khuyen dung)
+
+Mo hinh:
+- n8n nhan Telegram webhook.
+- n8n goi backend Node qua `POST /api/chat`.
+- n8n gui tin nhan lai Telegram (`sendMessage`) va gui QR (`sendPhoto`) neu co.
+
+File workflow import san:
+- `n8n/workflows/telegram-backend-orchestrator.json`
+
+Bien moi truong can co o n8n:
+- `BACKEND_BASE_URL` (vd: `https://your-backend-domain`)
+- `TELEGRAM_BOT_TOKEN`
+
+Thiet lap nhanh:
+1. Import workflow JSON trong n8n.
+2. Bat workflow va copy Production URL cua node `Telegram Webhook`.
+3. Dang ky webhook cho bot Telegram:
+
+```bash
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<N8N_WEBHOOK_URL>
+```
+
+4. Dam bao backend cong khai duoc endpoint `POST /api/chat`.
+5. Neu gui QR qua URL, `APP_BASE_URL` cua backend phai la domain public (khong dung `localhost`).
+
+Ghi chu:
+- Khi dung n8n orchestration, khong can bat Telegram polling trong backend.
+- Co the de `TELEGRAM_MODE=webhook` hoac `TELEGRAM_MODE=disabled` (neu ban tu quan ly webhook bang n8n).
