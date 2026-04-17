@@ -170,6 +170,31 @@ async function testKhongAtToppingPromptMeansNoToppingFlow() {
   resetSession(id);
 }
 
+async function testDenyInAskAddMoreDoesNotTriggerToppingUpdateFlow() {
+  const id = `t-add-more-no-update-top-${Date.now()}`;
+
+  await handleMessage(id, "cho mot ca phe den");
+  await handleMessage(id, "L");
+  await handleMessage(id, "khong");
+
+  const res = await handleMessage(id, "minh khong them");
+  assert.equal(res.stage, STAGE.CONFIRM_ORDER);
+
+  resetSession(id);
+}
+
+async function testConfirmOrderAcceptsRoiFlow() {
+  const id = `t-confirm-roi-${Date.now()}`;
+
+  await handleMessage(id, "CF01 size L x1");
+  await handleMessage(id, "khong");
+  await handleMessage(id, "khong");
+  const res = await handleMessage(id, "roi");
+  assert.equal(res.stage, STAGE.COLLECT_CUSTOMER_NAME);
+
+  resetSession(id);
+}
+
 async function testAddressCapturedFromFirstMessageFlow() {
   const id = `t-addr-first-${Date.now()}`;
 
@@ -282,6 +307,8 @@ async function main() {
     testNegativeAfterAmbiguousAddMoreStillGoesConfirmFlow
   );
   await runCase("tra loi khong o buoc topping duoc xem la khong topping", testKhongAtToppingPromptMeansNoToppingFlow);
+  await runCase("khong them o ASK_ADD_MORE phai sang confirm, khong sua topping", testDenyInAskAddMoreDoesNotTriggerToppingUpdateFlow);
+  await runCase("xac nhan don bang tu roi se qua buoc nhap ten", testConfirmOrderAcceptsRoiFlow);
   await runCase("nho dia chi duoc noi ngay tu cau dat mon dau tien", testAddressCapturedFromFirstMessageFlow);
   await runCase("lam sach dia chi lay tu cau dat mon", testAddressCandidateIsCleanedFlow);
   await runCase("tran chau den khong bi match them tran chau trang", testToppingDenKhongBiMatchTrangFlow);

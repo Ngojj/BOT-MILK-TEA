@@ -25,9 +25,14 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
       const msg = update.message;
       const chatId = msg?.chat?.id;
       const text = msg?.text;
+      const messageId = msg?.message_id;
       if (!chatId || !text) continue;
 
-      const result = await onMessage(String(chatId), String(text));
+      const result = await onMessage(String(chatId), String(text), {
+        source: "polling",
+        updateId: update.update_id,
+        messageId: messageId != null ? Number(messageId) : null
+      });
       if (!result) continue;
 
       const normalizedResult =

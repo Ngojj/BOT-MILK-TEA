@@ -17,6 +17,33 @@ app.use(express.json());
 const PORT = Number(process.env.PORT || 3000);
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_MODE = (process.env.TELEGRAM_MODE || "webhook").toLowerCase();
+const TELEGRAM_DEDUP_TTL_MS = 10 * 60 * 1000;
+const processedTelegramMessages = new Map();
+
+function buildTelegramDedupKey(chatId, messageId) {
+  if (chatId == null || messageId == null) return null;
+  return `${chatId}:${messageId}`;
+}
+
+function shouldSkipDuplicateTelegramMessage(chatId, messageId) {
+  const key = buildTelegramDedupKey(chatId, messageId);
+  if (!key) return false;
+
+  const now = Date.now();
+  const expiresAt = processedTelegramMessages.get(key);
+  if (expiresAt && expiresAt > now) {
+    return true;
+  }
+
+  processedTelegramMessages.set(key, now + TELEGRAM_DEDUP_TTL_MS);
+  for (const [storedKey, storedExpiresAt] of processedTelegramMessages.entries()) {
+    if (storedExpiresAt <= now) {
+      processedTelegramMessages.delete(storedKey);
+    }
+  }
+
+  return false;
+}
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "milk-tea-chatbot-backend", telegramMode: TELEGRAM_MODE });
@@ -80,7 +107,11 @@ app.post("/webhooks/telegram", async (req, res) => {
     const msg = req.body?.message;
     const chatId = msg?.chat?.id;
     const text = msg?.text;
+    const messageId = msg?.message_id;
     if (!chatId || !text) {
+      return res.sendStatus(200);
+    }
+    if (shouldSkipDuplicateTelegramMessage(chatId, messageId)) {
       return res.sendStatus(200);
     }
 
@@ -230,7 +261,10 @@ app.listen(PORT, () => {
   if (TELEGRAM_MODE === "polling" && TELEGRAM_BOT_TOKEN) {
     const polling = createTelegramPollingService({
       token: TELEGRAM_BOT_TOKEN,
-      onMessage: async (chatId, text) => {
+      onMessage: async (chatId, text, metadata = {}) => {
+        if (shouldSkipDuplicateTelegramMessage(chatId, metadata.messageId)) {
+          return null;
+        }
         return handleMessage(chatId, text);
       }
     });

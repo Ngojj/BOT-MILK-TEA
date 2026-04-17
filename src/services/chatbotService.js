@@ -113,6 +113,18 @@ function cleanAddressCandidate(candidate) {
   return value.trim();
 }
 
+function isConfirmLike(rawText, hint) {
+  if (hint?.intent === "confirm") return true;
+  if (hint?.intent === "deny") return false;
+  return isAffirmative(rawText);
+}
+
+function isDenyLike(rawText, hint) {
+  if (hint?.intent === "deny") return true;
+  if (hint?.intent === "confirm") return false;
+  return isNegative(rawText);
+}
+
 async function handleMessage(customerId, message) {
   const session = getSession(customerId);
   const finalize = (payload, options = {}) => {
@@ -220,14 +232,14 @@ async function handleMessage(customerId, message) {
       session.stage = STAGE.COLLECTING_ITEM;
       return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
     }
-    if (isAffirmative(rawText) || hint?.intent === "order") {
+    if (hint?.intent === "order" || isConfirmLike(rawText, hint)) {
       session.stage = STAGE.COLLECTING_ITEM;
       return finalize({
         reply: "Mình sẵn sàng lên món tiếp theo nè, bạn nhắn món bạn muốn gọi giúp mình nhé.",
         stage: session.stage
       });
     }
-    if (isNegative(rawText) || hint?.intent === "deny") {
+    if (isDenyLike(rawText, hint)) {
       session.stage = STAGE.CONFIRM_ORDER;
       return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
     }
@@ -235,12 +247,11 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.CONFIRM_ORDER) {
-    const isSimpleConfirm = /^(dung|đung|đúng)$/.test(rawText.trim().toLowerCase());
-    if (isSimpleConfirm || isAffirmative(rawText) || hint?.intent === "confirm") {
+    if (isConfirmLike(rawText, hint)) {
       session.stage = STAGE.COLLECT_CUSTOMER_NAME;
       return finalize({ reply: askName(), stage: session.stage });
     }
-    if (isNegative(rawText) || hint?.intent === "deny") {
+    if (isDenyLike(rawText, hint)) {
       session.stage = STAGE.COLLECTING_ITEM;
       return finalize({
         reply: "Bạn muốn chỉnh đơn theo hướng nào? Bạn có thể nhắn món cần thêm/sửa, hoặc nhắn `reset` để làm lại đơn mới.",
@@ -326,7 +337,7 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.COLLECT_CUSTOMER_NOTE) {
-    session.customer.note = isNegative(rawText) ? null : rawText;
+    session.customer.note = isDenyLike(rawText, hint) ? null : rawText;
     session.stage = STAGE.COLLECT_PAYMENT;
     return finalize({ reply: askPayment(), stage: session.stage });
   }

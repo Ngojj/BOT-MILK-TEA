@@ -73,6 +73,10 @@ function updateItemIdentityIfMissing(session, text, hint) {
 }
 
 function tryUpdateLastItemToppings(session, text, hint, normalizedRaw) {
+  if (isNegative(text) || hint?.intent === "deny") {
+    return null;
+  }
+
   if (!(session.cart.length > 0 && /\b(them|topping|top)\b/.test(normalizedRaw))) {
     return null;
   }

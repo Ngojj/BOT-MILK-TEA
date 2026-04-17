@@ -63,7 +63,7 @@ function extractSize(text) {
 
 function isAffirmative(text) {
   const normalized = normalizeText(text);
-  return /\b(co|ok|dong y|duoc|yes|dung roi|chuan|xac nhan)\b/.test(normalized);
+  return /\b(co|ok|oke|okela|dong y|duoc|yes|dung roi|dung|roi|roii|chuan|xac nhan)\b/.test(normalized);
 }
 
 function isNegative(text) {
