@@ -48,7 +48,7 @@ function collectMissingItemFields(session, text, hint) {
   }
 
   if (draft.toppings === null) {
-    if (isNegative(text)) {
+    if (hint?.intent === "deny" || isNegative(text)) {
       draft.toppings = [];
     } else {
     const tops = parseToppingsFromHint(hint, draft.quantity) ?? parseToppings(text, draft.quantity);

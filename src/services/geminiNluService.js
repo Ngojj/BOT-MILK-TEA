@@ -86,7 +86,23 @@ async function analyzeCustomerMessage(message, context = {}) {
   if (!GEMINI_API_KEY || !message) return null;
 
   try {
-    const parsed = await callGemini(message, context);
+    let parsed = await callGemini(message, context);
+    const looksUncertain =
+      !parsed ||
+      typeof parsed !== "object" ||
+      ((parsed.intent === "unknown" || !parsed.intent) && !parsed.item_code && !parsed.item_name);
+
+    // Let Gemini re-interpret short/slang messages before fallback rules handle them.
+    if (looksUncertain) {
+      const retryPrompt =
+        `${message}\n` +
+        "Hay dien giai viet tat/slang/loi go pho bien sang tieng viet day du roi moi trich xuat JSON.";
+      const retried = await callGemini(retryPrompt, context);
+      if (retried && typeof retried === "object") {
+        parsed = retried;
+      }
+    }
+
     if (!parsed || typeof parsed !== "object") return null;
 
     return {
