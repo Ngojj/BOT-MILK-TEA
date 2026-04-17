@@ -5,8 +5,25 @@ const {
   extractSize
 } = require("../../utils/text");
 
-function findItemInText(text) {
+function normalizeAliasText(text) {
   const normalized = normalizeText(text);
+  return normalized
+    .replace(/\bcf\b/g, "ca phe")
+    .replace(/\bcafe\b/g, "ca phe")
+    .replace(/\bcp\b/g, "ca phe")
+    .replace(/\bts\b/g, "tra sua")
+    .replace(/\bttg\b/g, "tra trai cay")
+    .replace(/\bdx\b/g, "da xay")
+    .replace(/\bsocola\b/g, "socola")
+    .replace(/\bmatcha\b/g, "matcha")
+    .replace(/\bkm\b/g, "khoai mon")
+    .replace(/\bdt\b/g, "dau tay")
+    .replace(/\bcl\b/g, "chanh leo")
+    .replace(/\bmx\b/g, "mam xoi");
+}
+
+function findItemInText(text) {
+  const normalized = normalizeAliasText(text);
   const byCode = MENU_ITEMS.find((it) => normalized.includes(it.id.toLowerCase()));
   if (byCode) return byCode;
 
@@ -151,10 +168,11 @@ function startItemDraft(text, hint) {
   const foundItem = findItemFromHint(hint) || findItemInText(text);
   if (!foundItem) return null;
 
-  const size = (hint?.size === "M" || hint?.size === "L" ? hint.size : null) || extractSize(text);
-  const quantity = (hint?.quantity && hint.quantity > 0 ? hint.quantity : null) || extractQuantity(text);
+  const aliasText = normalizeAliasText(text);
+  const size = (hint?.size === "M" || hint?.size === "L" ? hint.size : null) || extractSize(aliasText);
+  const quantity = (hint?.quantity && hint.quantity > 0 ? hint.quantity : null) || extractQuantity(aliasText);
   const inferredQty = quantity && quantity > 0 ? quantity : null;
-  const toppings = parseToppingsFromHint(hint, inferredQty || 1) ?? parseToppings(text, inferredQty || 1);
+  const toppings = parseToppingsFromHint(hint, inferredQty || 1) ?? parseToppings(aliasText, inferredQty || 1);
 
   return {
     item_id: foundItem.id,

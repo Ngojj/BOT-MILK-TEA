@@ -195,6 +195,32 @@ async function testConfirmOrderAcceptsRoiFlow() {
   resetSession(id);
 }
 
+async function testCfDenAbbreviationStillStartsOrderFlow() {
+  const id = `t-cf-den-abbr-${Date.now()}`;
+
+  const res = await handleMessage(id, "cho mot cf den");
+  assert.equal(res.stage, STAGE.COLLECTING_ITEM);
+  assert.ok(normalizeText(res.reply).includes("size"));
+
+  resetSession(id);
+}
+
+async function testCommonDrinkAbbreviationsStartOrderFlow() {
+  const cases = [
+    "cho mot ts khoai mon",
+    "cho mot dx socola",
+    "cho mot ttg chanh leo"
+  ];
+
+  for (let index = 0; index < cases.length; index += 1) {
+    const id = `t-abbr-${index}-${Date.now()}`;
+    const res = await handleMessage(id, cases[index]);
+    assert.equal(res.stage, STAGE.COLLECTING_ITEM);
+    assert.ok(normalizeText(res.reply).includes("size"));
+    resetSession(id);
+  }
+}
+
 async function testAddressCapturedFromFirstMessageFlow() {
   const id = `t-addr-first-${Date.now()}`;
 
@@ -309,6 +335,8 @@ async function main() {
   await runCase("tra loi khong o buoc topping duoc xem la khong topping", testKhongAtToppingPromptMeansNoToppingFlow);
   await runCase("khong them o ASK_ADD_MORE phai sang confirm, khong sua topping", testDenyInAskAddMoreDoesNotTriggerToppingUpdateFlow);
   await runCase("xac nhan don bang tu roi se qua buoc nhap ten", testConfirmOrderAcceptsRoiFlow);
+  await runCase("viet tat cf den van vao duoc flow dat mon", testCfDenAbbreviationStillStartsOrderFlow);
+  await runCase("nhan dien viet tat cac nhom mon pho bien", testCommonDrinkAbbreviationsStartOrderFlow);
   await runCase("nho dia chi duoc noi ngay tu cau dat mon dau tien", testAddressCapturedFromFirstMessageFlow);
   await runCase("lam sach dia chi lay tu cau dat mon", testAddressCandidateIsCleanedFlow);
   await runCase("tran chau den khong bi match them tran chau trang", testToppingDenKhongBiMatchTrangFlow);
