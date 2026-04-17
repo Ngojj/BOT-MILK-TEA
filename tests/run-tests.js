@@ -124,6 +124,24 @@ async function testUpdateLastItemToppingFlow() {
   resetSession(id);
 }
 
+async function testNegativeAfterAmbiguousAddMoreStillGoesConfirmFlow() {
+  const id = `t-add-more-deny-${Date.now()}`;
+
+  await handleMessage(id, "cho toi mot ca phe den them kem tuoi");
+  await handleMessage(id, "L");
+
+  // "ok" currently means user wants to continue ordering, bot asks for next item.
+  let res = await handleMessage(id, "ok");
+  assert.equal(res.stage, STAGE.COLLECTING_ITEM);
+
+  // User then clarifies no more items; bot should move to confirm order.
+  res = await handleMessage(id, "khong theem mon moi");
+  assert.equal(res.stage, STAGE.CONFIRM_ORDER);
+  assert.ok(normalizeText(res.reply).includes("tong"));
+
+  resetSession(id);
+}
+
 async function testAddressCapturedFromFirstMessageFlow() {
   const id = `t-addr-first-${Date.now()}`;
 
@@ -230,6 +248,10 @@ async function main() {
   await runCase("validate dia chi: input mo ho se bi hoi lai", testAddressValidationFlow);
   await runCase("co the huy don o bat ky buoc nao", testCancelAnyStageFlow);
   await runCase("bo sung topping cho mon vua them o ASK_ADD_MORE", testUpdateLastItemToppingFlow);
+  await runCase(
+    "dang o collecting item nhung nguoi dung noi khong them nua thi chuyen sang confirm",
+    testNegativeAfterAmbiguousAddMoreStillGoesConfirmFlow
+  );
   await runCase("nho dia chi duoc noi ngay tu cau dat mon dau tien", testAddressCapturedFromFirstMessageFlow);
   await runCase("lam sach dia chi lay tu cau dat mon", testAddressCandidateIsCleanedFlow);
   await runCase("tran chau den khong bi match them tran chau trang", testToppingDenKhongBiMatchTrangFlow);

@@ -185,6 +185,11 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.COLLECTING_ITEM) {
+    if (session.cart.length > 0 && (isNegative(rawText) || hint?.intent === "deny")) {
+      session.stage = STAGE.CONFIRM_ORDER;
+      return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
+    }
+
     if (!session.currentItem) {
       const draft = startItemDraft(text, hint);
       if (!draft) {
