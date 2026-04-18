@@ -277,8 +277,18 @@ async function sendTelegramQrPhoto(token, chatId, qrCode, caption) {
   return { ok: true };
 }
 
+let cachedMenuFileId = null;
+
 async function sendTelegramPhotoFile(token, chatId, filePath, caption) {
   if (!filePath) return { ok: true };
+  
+  if (cachedMenuFileId) {
+    const res = await sendTelegramPhotoByUrl(token, chatId, cachedMenuFileId, caption);
+    if (res.ok) return res;
+    // Fallback if file_id fails for some reason
+    cachedMenuFileId = null;
+  }
+
   let fileBuffer;
   try {
     fileBuffer = await fs.readFile(filePath);
@@ -303,6 +313,18 @@ async function sendTelegramPhotoFile(token, chatId, filePath, caption) {
       detail: await telegramRes.text().catch(() => "")
     };
   }
+
+  try {
+    const data = await telegramRes.json();
+    if (data?.result?.photo?.length > 0) {
+      // Telegram returns an array of photo sizes, the last one is the largest/original
+      const photos = data.result.photo;
+      cachedMenuFileId = photos[photos.length - 1].file_id;
+    }
+  } catch (err) {
+    console.error("[telegram] khong the luu file_id:", err.message);
+  }
+
   return { ok: true };
 }
 

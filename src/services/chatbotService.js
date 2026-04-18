@@ -153,9 +153,25 @@ async function handleMessage(customerId, message) {
     return finalize({ reply: askMessageContent(), stage: session.stage });
   }
 
+  const normalizedRaw = normalizeText(rawText);
+
+  // Bỏ qua gọi NLU nếu khách chỉ nhắn "menu" để tăng tốc độ phản hồi
+  if (normalizedRaw === "menu" || /\bmenu\b/.test(normalizedRaw) || normalizedRaw.includes("xem menu")) {
+    return finalize({
+      reply: "",
+      telegram: {
+        menu: true,
+        photoUrl: getMenuPhotoUrl(),
+        photoFilePath: MENU_IMAGE_PATH,
+        menuPhotoCaption: menuPhotoCaptionText(),
+        fallbackText: formatMenu()
+      },
+      stage: session.stage
+    });
+  }
+
   const hint = await analyzeCustomerMessage(rawText, { stage: session.stage });
   const text = buildSystemInput(rawText, hint);
-  const normalizedRaw = normalizeText(rawText);
   const contextualAddress = extractAddressFromMessage(rawText);
   if (contextualAddress && !session.customer.address) {
     session.customer.address = contextualAddress;
