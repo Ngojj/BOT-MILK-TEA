@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Báo Cáo Dự Án - BOT MILK TEA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #1ba659; /* Casso Green */
+        --dark-green: #0a522f;
+        --light-green: #dcf3e3;
+        --text-main: #1f2937;
+        --text-muted: #4b5563;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #525659;
+        display: flex;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--text-main);
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .a4-container {
+        background-color: #ffffff;
+        width: 210mm;
+        height: 297mm; /* Cố định chiều cao chuẩn A4 */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        z-index: 0;
+        padding-bottom: 80px;
+      }
+
+      @media print {
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          background-color: white;
+          display: block;
+        }
+        .a4-container {
+          width: 210mm;
+          height: 297mm;
+          box-shadow: none;
+          margin: 0;
+        }
+      }
+
+      /* Top background geometric shapes */
+      .bg-shape-left {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 250px;
+        height: 380px;
+        background: #bfe9d0;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+        z-index: -1;
+      }
+
+      .bg-shape-right-1 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 450px;
+        height: 450px;
+        background: #bfe9d0;
+        clip-path: polygon(100% 0, 30% 0, 100% 100%);
+        z-index: -1;
+      }
+
+      .bg-shape-right-2 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 350px;
+        height: 350px;
+        background: #2bce72;
+        clip-path: polygon(100% 0, 30% 0, 100% 100%);
+        z-index: -1;
+      }
+
+      .bg-shape-right-3 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 220px;
+        height: 220px;
+        background: #1ba659;
+        clip-path: polygon(100% 0, 30% 0, 100% 100%);
+        z-index: -1;
+      }
+
+      .header {
+        position: relative;
+        z-index: 10;
+        padding: 10px 50px 0;
+      }
+
+      .company-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .logo {
+        width: 50px;
+        height: auto;
+      }
+
+      .company-info h2 {
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+      }
+      .company-info p {
+        color: #000;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      /* Banner title section with solid background */
+      .title-section {
+        text-align: center;
+        background-color: #d8f0e1;
+        padding: 10px 0;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 10;
+      }
+
+      .main-title {
+        font-size: 36px;
+        font-weight: 900;
+        color: #000;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 4px;
+      }
+
+      .sub-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--dark-green);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .author-text {
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #222;
+      }
+      .author-text strong {
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .content {
+        padding: 0 50px 20px;
+        flex-grow: 1;
+        position: relative;
+        z-index: 10;
+        zoom: 0.96;
+      }
+
+      .section-header {
+        text-align: center;
+        color: var(--primary);
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+      }
+
+      /* Timeline */
+      .timeline {
+        position: relative;
+        margin: 0 40px 15px;
+      }
+      .timeline-line {
+        position: absolute;
+        top: 30px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: #000;
+        z-index: 1;
+      }
+      .timeline-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        z-index: 2;
+      }
+      .timeline-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: transparent;
+        width: 100px;
+      }
+      .step-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 5px;
+        height: 20px;
+        color: #000;
+      }
+      .step-point {
+        width: 10px;
+        height: 10px;
+        background-color: #000;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-sizing: content-box;
+      }
+
+      /* Dashed Box */
+      .dashed-box {
+        border: 1.5px dashed #6b7280;
+        border-radius: 16px;
+        padding: 12px 20px;
+        position: relative;
+        margin-bottom: 15px;
+      }
+      .dashed-box-title {
+        position: absolute;
+        top: -12px;
+        left: 30px;
+        background: #fff;
+        padding: 0 10px;
+        color: var(--primary);
+        font-size: 16px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .dashed-box p {
+        font-size: 12.5px;
+        line-height: 1.5;
+        margin-bottom: 6px;
+        color: #111;
+      }
+      .dashed-box p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Grid sections */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 10px;
+      }
+
+      .info-col h3 {
+        color: var(--primary);
+        font-size: 15px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      .solid-box {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px 15px;
+        height: 100%;
+        background: #fafafa;
+      }
+      .solid-box ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #111;
+      }
+      .solid-box li {
+        margin-bottom: 8px;
+      }
+      .solid-box li::marker {
+        color: #111;
+      }
+
+      /* Footer / Submission section */
+      .submission-note {
+        text-align: center;
+        margin: 25px auto 5px;
+        border: 2px solid var(--primary);
+        border-radius: 30px;
+        padding: 6px 20px;
+        display: inline-block;
+        font-weight: 700;
+        font-size: 13px;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #000;
+      }
+      .submission-note span {
+        color: var(--primary);
+      }
+
+      /* Page Footer */
+      .page-footer {
+        margin-top: auto;
+        padding: 15px 50px;
+        border-top: 2px solid var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        position: absolute; /* Chuyển sang vị trí tuyệt đối */
+        bottom: 0; /* Đặt ở đáy container */
+        left: 0; /* Căn lề trái */
+        width: 100%; /* Chiều rộng toàn bộ */
+        box-sizing: border-box; /* Đảm bảo padding không làm tăng chiều rộng */
+        margin-top: 0;
+      }
+      .page-footer p {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #000;
+      }
+      .page-footer p span {
+        color: var(--primary);
+      }
+      .page-footer .address {
+        font-weight: 600;
+        color: #000;
+      }
+
+      /* Location Icon */
+      .location-icon {
+        color: var(--primary);
+        font-size: 16px;
+        margin-right: 5px;
+      }
+
+      strong {
+        font-weight: 700;
+        color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="a4-container">
+      <!-- Top Background Geometrics -->
+      <div class="bg-shape-left"></div>
+      <div class="bg-shape-right-1"></div>
+      <div class="bg-shape-right-2"></div>
+      <div class="bg-shape-right-3"></div>
+
+      <div class="header">
+        <div class="company-header">
+          <!-- Casso Logo Image -->
+          <img src="./img/CASSO_LOGO.jpg" alt="Casso Logo" class="logo" />
+          <div class="company-info">
+            <h2>CASSO COMPANY LIMITED</h2>
+            <p>
+              Số 11 đường D9, Khu Đô Thị Thiên An Nguyên, phường Đông Hoà, TP
+              HCM
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="title-section">
+        <h1 class="main-title">ENTRY TEST</h1>
+        <h3 class="sub-title">INTERN SOFTWARE ENGINEER 2026</h3>
+        <p class="author-text">
+          Người thực hiện: <strong>Ngọ Văn Hiệp</strong>
+        </p>
+      </div>
+
+      <div class="content">
+        <h2 class="section-header">QUY TRÌNH THỰC HIỆN</h2>
+
+        <div class="timeline">
+          <div class="timeline-line"></div>
+          <div class="timeline-steps">
+            <div class="timeline-step">
+              <div class="step-label">Phân tích</div>
+              <div class="step-point"></div>
+            </div>
+            <div class="timeline-step">
+              <div class="step-label">Thiết kế</div>
+              <div class="step-point"></div>
+            </div>
+            <div class="timeline-step">
+              <div class="step-label">Phát triển</div>
+              <div class="step-point"></div>
+            </div>
+            <div class="timeline-step">
+              <div class="step-label">Tích hợp</div>
+              <div class="step-point"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashed-box">
+          <h3 class="dashed-box-title">PHÂN TÍCH BÀI TOÁN & GIẢI PHÁP</h3>
+          <p>
+            <strong>• Vấn đề (Pain-points):</strong> Việc chốt đơn thủ công qua tin nhắn dễ gây chậm trễ, nhầm lẫn topping/lượng đá đường, khó kiểm soát thanh toán và làm giảm hiệu suất phục vụ vào giờ cao điểm.
+          </p>
+          <p>
+            <strong>• Giải pháp đề xuất:</strong> Phát triển một <strong>bản sao AI</strong> trên <strong>Telegram</strong> đóng vai trò nhân viên tư vấn và chốt đơn tự động. Tích hợp cổng <strong>payOS</strong> sinh mã VietQR thanh toán liền mạch trong khung chat.
+          </p>
+          <p>
+            <strong>• Giá trị cốt lõi:</strong> Đồng bộ trạng thái đơn hàng theo thời gian thực (real-time) lên một <strong>Admin Dashboard</strong>, giúp chủ quán theo dõi tiến độ pha chế và doanh thu, giảm 100% sai sót thủ công.
+          </p>
+        </div>
+
+        <div class="dashed-box">
+          <h3 class="dashed-box-title">KIẾN TRÚC & CÔNG NGHỆ</h3>
+          <p>
+            <strong>1. Trí tuệ nhân tạo (LLM):</strong> Ứng dụng mô hình AI tiên
+            tiến (Gemini Pro) được thiết lập prompt kỹ lưỡng để đóng vai người
+            bán, hiểu chính xác các intent đặt món, thêm topping, điều chỉnh độ
+            đường/đá của khách hàng.
+          </p>
+          <p>
+            <strong>2. Hệ thống Backend:</strong> Xây dựng bằng
+            <strong>Node.js</strong> kết hợp <strong>Express.js</strong>, xử lý
+            luồng Webhook từ Telegram và lưu trữ trạng thái đơn hàng để duy trì
+            context chat xuyên suốt phiên giao dịch.
+          </p>
+          <p>
+            <strong>3. Tích hợp thanh toán:</strong> Gắn API của
+            <strong>payOS</strong>, tự động sinh mã VietQR cho mỗi đơn và ghi
+            nhận kết quả giao dịch qua webhook, sau đó lập tức thông báo trạng
+            thái thanh toán thành công lên chat.
+          </p>
+          <p>
+            <strong>4. Frontend Dashboard:</strong> Giao diện Web hiện đại, liên
+            kết với Backend để đẩy dữ liệu đơn mới xuống trình duyệt ngay lập
+            tức, hỗ trợ thay đổi trạng thái tiến độ làm món.
+          </p>
+          <p>
+            <strong>5. Hướng phát triển (Next Steps):</strong> Kế hoạch tiếp theo là sử dụng <strong>n8n</strong> để vẽ luồng (workflow) và tự động hóa toàn bộ quy trình vận hành một cách trực quan, tối ưu và dễ dàng mở rộng.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="info-col">
+            <h3>Tính năng của Bot (Khách)</h3>
+            <div class="solid-box">
+              <ul>
+                <li>Giao tiếp tự nhiên, thân thiện.</li>
+                <li>Tư vấn menu trà sữa và topping chi tiết.</li>
+                <li>
+                  Cho phép tùy chỉnh lượng đá, lượng đường linh hoạt qua chat.
+                </li>
+                <li>Tổng hợp giỏ hàng và tính tổng số tiền chính xác.</li>
+                <li>Cung cấp mã QR thanh toán động và tự động xác nhận.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="info-col">
+            <h3>Tính năng Dashboard (Chủ quán)</h3>
+            <div class="solid-box">
+              <ul>
+                <li>
+                  Quản lý đơn hàng thời gian thực, không cần tải lại trang.
+                </li>
+                <li>Hiển thị chi tiết yêu cầu món (ít đá, nhiều đường...).</li>
+                <li>
+                  Quản lý thay đổi trạng thái tiến độ (Chờ xử lý, Đang pha, Đã
+                  giao).
+                </li>
+                <li>
+                  Theo dõi trạng thái thanh toán qua payOS của từng đơn hàng.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="submission-note">
+          Trạng thái dự án: <span>Hoàn thành 100% & Sẵn sàng Demo</span>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span class="location-icon">📍</span>
+        <p>
+          <span>CASSO COMPANY LIMITED</span><br />
+          <span class="address"
+            >Số 11 đường D9, Khu Đô Thị Thiên An Nguyên, phường Đông Hoà, TP
+            HCM</span
+          >
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -326,7 +326,7 @@ function handleCollectCustomerPhoneState(session, finalize, rawText) {
   }
 
   session.stage = STAGE.COLLECT_CUSTOMER_ADDRESS;
-  return finalize({ reply: askAddress(), stage: session.stage });
+  return finalize({ reply: askDeliveryAddress(), stage: session.stage });
 }
 
 function handleCollectCustomerAddressState(session, finalize, rawText, normalizedRaw2) {
