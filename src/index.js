@@ -18,6 +18,8 @@ app.use(express.json());
 app.use("/static", express.static(path.join(__dirname, "../static")));
 
 const PORT = Number(process.env.PORT || 3000);
+/** Ảnh menu trong repo — dùng upload trực tiếp lên Telegram khi gửi bằng URL thất bại. */
+const MENU_STATIC_FILE = path.join(__dirname, "../static/menu.png");
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_MODE = (process.env.TELEGRAM_MODE || "webhook").toLowerCase();
 const TELEGRAM_DEDUP_TTL_MS = 10 * 60 * 1000;
@@ -257,6 +259,12 @@ async function sendTelegramResult({ token, chatId, result }) {
     let sentPhoto = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
     if (!sentPhoto.ok && photoFilePath) {
       sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+    }
+    if (!sentPhoto.ok) {
+      sentPhoto = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, photoCaption);
+    }
+    if (!sentPhoto.ok && photoUrl) {
+      console.error("[telegram] menu photo failed (url + file):", sentPhoto.detail || "");
     }
     if (!sentPhoto.ok && fallbackText) {
       return sendTelegramMessage(token, chatId, fallbackText);

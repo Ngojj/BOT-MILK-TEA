@@ -1,5 +1,8 @@
 const QRCode = require("qrcode");
 const fs = require("node:fs/promises");
+const path = require("node:path");
+
+const MENU_STATIC_FILE = path.join(__dirname, "../../static/menu.png");
 
 function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
   let offset = 0;
@@ -60,6 +63,12 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
         let sentMenu = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
         if (!sentMenu.ok && photoFilePath) {
           sentMenu = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+        }
+        if (!sentMenu.ok) {
+          sentMenu = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, photoCaption);
+        }
+        if (!sentMenu.ok && photoUrl) {
+          console.error("[telegram] menu photo failed (url + file):", sentMenu.detail || sentMenu.status);
         }
         if (!sentMenu.ok && fallbackText) {
           await sendTelegramMessage(token, chatId, fallbackText);

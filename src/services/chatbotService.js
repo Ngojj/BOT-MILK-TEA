@@ -166,11 +166,11 @@ async function handleMessage(customerId, message) {
 
   if (normalizedRaw === "menu" || normalizedRaw.includes("xem menu") || hint?.intent === "menu") {
     return finalize({
-      reply: "Mình gửi menu bằng ảnh ở dưới để bạn xem nhanh nha 👇",
+      reply: "",
       telegram: {
         photoUrl: getMenuPhotoUrl(),
         photoFilePath: MENU_IMAGE_PATH,
-        photoCaption: "📋 MENU HIỆN TẠI",
+        photoCaption: "📋 MENU HIỆN TẠI\n\nBạn muốn đặt món nào trước ạ? 🧋",
         fallbackText: formatMenu()
       },
       stage: session.stage
