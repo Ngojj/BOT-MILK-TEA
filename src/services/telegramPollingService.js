@@ -53,32 +53,31 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
         continue;
       }
 
-      const photoUrl = normalizedResult.telegram?.photoUrl;
-      const photoFilePath = normalizedResult.telegram?.photoFilePath;
-      const photoCaption = normalizedResult.telegram?.photoCaption;
-      const fallbackText = normalizedResult.telegram?.fallbackText;
-      const qrCode = normalizedResult.telegram?.photoQrCode;
+      const tg = normalizedResult.telegram;
+      const menuCaption = tg?.menuPhotoCaption || tg?.photoCaption;
+      const qrCode = tg?.photoQrCode;
 
-      if (photoUrl || photoFilePath) {
-        let sentMenu = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
-        if (!sentMenu.ok && photoFilePath) {
-          sentMenu = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+      if (tg?.menu) {
+        let sentMenu = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, menuCaption);
+        if (!sentMenu.ok && tg.photoFilePath) {
+          sentMenu = await sendTelegramPhotoFile(token, chatId, tg.photoFilePath, menuCaption);
+        }
+        if (!sentMenu.ok && tg.photoUrl) {
+          sentMenu = await sendTelegramPhotoByUrl(token, chatId, tg.photoUrl, menuCaption);
         }
         if (!sentMenu.ok) {
-          sentMenu = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, photoCaption);
+          console.error("[telegram] menu photo failed:", sentMenu.detail || sentMenu.status);
         }
-        if (!sentMenu.ok && photoUrl) {
-          console.error("[telegram] menu photo failed (url + file):", sentMenu.detail || sentMenu.status);
-        }
-        if (!sentMenu.ok && fallbackText) {
-          await sendTelegramMessage(token, chatId, fallbackText);
+        if (!sentMenu.ok && tg.fallbackText) {
+          await sendTelegramMessage(token, chatId, tg.fallbackText);
         } else if (!sentMenu.ok) {
           console.error("[telegram] sendPhoto (menu) failed:", sentMenu.status, sentMenu.detail);
         }
       }
       if (!qrCode) continue;
 
-      const sentPhoto = await sendTelegramQrPhoto(token, chatId, qrCode, photoCaption);
+      const qrCaption = tg?.qrPhotoCaption || tg?.photoCaption;
+      const sentPhoto = await sendTelegramQrPhoto(token, chatId, qrCode, qrCaption);
       if (!sentPhoto.ok) {
         console.error("[telegram] sendPhoto failed:", sentPhoto.status, sentPhoto.detail);
       }

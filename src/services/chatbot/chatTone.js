@@ -1,3 +1,5 @@
+const { formatVnd } = require("../../utils/text");
+
 function oneOf(options) {
   return options[Math.floor(Math.random() * options.length)];
 }
@@ -202,6 +204,16 @@ function payosCreateFailed(orderId) {
   ]);
 }
 
+function paymentReceivedThankYou(order) {
+  const totalFormatted = formatVnd(order.total);
+  const orderId = order.order_id;
+  return oneOf([
+    `Cảm ơn bạn đã thanh toán đơn ${orderId} (${totalFormatted}). Quán luôn chào đón bạn quay lại lần sau. Chúc bạn một ngày vui vẻ! 🙏`,
+    `Shop đã nhận thanh toán cho đơn ${orderId} (${totalFormatted}) rồi ạ. Cảm ơn bạn đã tin tưởng — hẹn gặp lại bạn nhé! ❤️`,
+    `Đã xác nhận thanh toán đơn ${orderId} (${totalFormatted}). Cảm ơn bạn rất nhiều, chúc bạn một ngày tốt lành! 🙏`
+  ]);
+}
+
 function orderConfirmed({ orderId, totalFormatted, paymentMethod, isPickup }) {
   const deliveryLine = isPickup ? "Bạn ghé lấy giúp mình khi tiện nha." : "Mình sẽ ưu tiên chuẩn bị và giao sớm cho bạn.";
   if (paymentMethod === "COD") {
@@ -245,5 +257,6 @@ module.exports = {
   unknown,
   paymentCreatedPayOS,
   payosCreateFailed,
+  paymentReceivedThankYou,
   orderConfirmed
 };

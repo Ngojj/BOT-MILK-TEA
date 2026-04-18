@@ -11,6 +11,7 @@ const {
 } = require("./services/chatbotService");
 const { createTelegramPollingService } = require("./services/telegramPollingService");
 const { verifyWebhookPayload, isPayOSConfigured } = require("./services/payosService");
+const { paymentReceivedThankYou } = require("./services/chatbot/chatTone");
 const QRCode = require("qrcode");
 
 const app = express();
@@ -250,30 +251,28 @@ async function sendTelegramResult({ token, chatId, result }) {
   const textResult = await sendTelegramMessage(token, chatId, result?.reply || "");
   if (!textResult.ok) return textResult;
 
-  const photoUrl = result?.telegram?.photoUrl;
-  const photoFilePath = result?.telegram?.photoFilePath;
-  const photoCaption = result?.telegram?.photoCaption;
-  const fallbackText = result?.telegram?.fallbackText;
+  const tg = result?.telegram;
+  const menuCaption = tg?.menuPhotoCaption || tg?.photoCaption;
 
-  if (photoUrl || photoFilePath) {
-    let sentPhoto = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
-    if (!sentPhoto.ok && photoFilePath) {
-      sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+  if (tg?.menu) {
+    let sentPhoto = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, menuCaption);
+    if (!sentPhoto.ok && tg.photoFilePath) {
+      sentPhoto = await sendTelegramPhotoFile(token, chatId, tg.photoFilePath, menuCaption);
+    }
+    if (!sentPhoto.ok && tg.photoUrl) {
+      sentPhoto = await sendTelegramPhotoByUrl(token, chatId, tg.photoUrl, menuCaption);
     }
     if (!sentPhoto.ok) {
-      sentPhoto = await sendTelegramPhotoFile(token, chatId, MENU_STATIC_FILE, photoCaption);
+      console.error("[telegram] menu photo failed:", sentPhoto.detail || "");
     }
-    if (!sentPhoto.ok && photoUrl) {
-      console.error("[telegram] menu photo failed (url + file):", sentPhoto.detail || "");
-    }
-    if (!sentPhoto.ok && fallbackText) {
-      return sendTelegramMessage(token, chatId, fallbackText);
+    if (!sentPhoto.ok && tg.fallbackText) {
+      return sendTelegramMessage(token, chatId, tg.fallbackText);
     }
     if (!sentPhoto.ok) return sentPhoto;
   }
 
-  const qrCode = result?.telegram?.photoQrCode;
-  const qrCaption = result?.telegram?.photoCaption;
+  const qrCode = tg?.photoQrCode;
+  const qrCaption = tg?.qrPhotoCaption || tg?.photoCaption;
   if (!qrCode) return { ok: true };
 
   return sendTelegramQrPhoto(token, chatId, qrCode, qrCaption);
@@ -294,10 +293,21 @@ app.post("/webhooks/payos", async (req, res) => {
     }
 
     if (code === "00") {
-      const updatedOrder = markOrderPaidByPayOSOrderCode(orderCode);
+      const updated = markOrderPaidByPayOSOrderCode(orderCode);
+      if (updated?.customerId && TELEGRAM_BOT_TOKEN) {
+        try {
+          const thankYou = paymentReceivedThankYou(updated.order);
+          const sent = await sendTelegramMessage(TELEGRAM_BOT_TOKEN, updated.customerId, thankYou);
+          if (!sent.ok) {
+            console.error("[payos] gui tin cam on Telegram loi:", sent.detail || "");
+          }
+        } catch (err) {
+          console.error("[payos] gui tin cam on Telegram:", err?.message || err);
+        }
+      }
       return res.json({
         ok: true,
-        paid: Boolean(updatedOrder),
+        paid: Boolean(updated),
         orderCode: Number(orderCode)
       });
     }

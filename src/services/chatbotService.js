@@ -69,7 +69,7 @@ function markOrderPaidByPayOSOrderCode(orderCode) {
     session.latestOrder.status = "confirmed";
     persistSession(updated.customerId, session);
   }
-  return updated.order;
+  return { order: updated.order, customerId: updated.customerId };
 }
 
 function isLikelyAddressText(text) {
@@ -168,9 +168,10 @@ async function handleMessage(customerId, message) {
     return finalize({
       reply: "",
       telegram: {
+        menu: true,
         photoUrl: getMenuPhotoUrl(),
         photoFilePath: MENU_IMAGE_PATH,
-        photoCaption: "📋 MENU HIỆN TẠI\n\nBạn muốn đặt món nào trước ạ? 🧋",
+        menuPhotoCaption: "📋 MENU HIỆN TẠI\n\nBạn muốn đặt món nào trước ạ? 🧋",
         fallbackText: formatMenu()
       },
       stage: session.stage
@@ -409,7 +410,7 @@ async function handleMessage(customerId, message) {
           order,
           telegram: {
             photoQrCode: paymentLink.qrCode,
-            photoCaption:
+            qrPhotoCaption:
               `QR chuyển khoản đơn ${order.order_id}\n` +
               `Số tiền: ${formatVnd(order.total)}\n` +
               `Nội dung CK: DH ${order.order_id}`
