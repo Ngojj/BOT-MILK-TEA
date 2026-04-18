@@ -10,7 +10,7 @@ const {
   createPayOSOrderCode,
   createPaymentLink
 } = require("./payosService");
-const { APP_BASE_URL, MENU_IMAGE_PATH, STAGE } = require("./chatbot/constants");
+const { APP_BASE_URL, getMenuPhotoUrl, MENU_IMAGE_PATH, STAGE } = require("./chatbot/constants");
 const {
   getSession,
   getCachedSession,
@@ -168,6 +168,7 @@ async function handleMessage(customerId, message) {
     return finalize({
       reply: "Mình gửi menu bằng ảnh ở dưới để bạn xem nhanh nha 👇",
       telegram: {
+        photoUrl: getMenuPhotoUrl(),
         photoFilePath: MENU_IMAGE_PATH,
         photoCaption: "📋 MENU HIỆN TẠI",
         fallbackText: formatMenu()

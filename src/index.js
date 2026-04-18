@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const path = require("node:path");
 const fs = require("node:fs/promises");
 const {
   handleMessage,
@@ -14,6 +15,7 @@ const QRCode = require("qrcode");
 
 const app = express();
 app.use(express.json());
+app.use("/static", express.static(path.join(__dirname, "../static")));
 
 const PORT = Number(process.env.PORT || 3000);
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -219,28 +221,54 @@ async function sendTelegramPhotoFile(token, chatId, filePath, caption) {
   return { ok: true };
 }
 
+async function sendTelegramPhotoByUrl(token, chatId, photoUrl, caption) {
+  if (!photoUrl) return { ok: true };
+  const telegramUrl = `https://api.telegram.org/bot${token}/sendPhoto`;
+  const body = {
+    chat_id: chatId,
+    photo: photoUrl
+  };
+  if (caption) body.caption = caption;
+  const telegramRes = await fetch(telegramUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!telegramRes.ok) {
+    return {
+      ok: false,
+      detail: await telegramRes.text().catch(() => "")
+    };
+  }
+  return { ok: true };
+}
+
 async function sendTelegramResult({ token, chatId, result }) {
   const textResult = await sendTelegramMessage(token, chatId, result?.reply || "");
   if (!textResult.ok) return textResult;
 
+  const photoUrl = result?.telegram?.photoUrl;
   const photoFilePath = result?.telegram?.photoFilePath;
   const photoCaption = result?.telegram?.photoCaption;
-  if (photoFilePath) {
-    const sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
-    if (!sentPhoto.ok) {
-      const fallbackText = result?.telegram?.fallbackText;
-      if (fallbackText) {
-        return sendTelegramMessage(token, chatId, fallbackText);
-      }
-      return sentPhoto;
+  const fallbackText = result?.telegram?.fallbackText;
+
+  if (photoUrl || photoFilePath) {
+    let sentPhoto = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
+    if (!sentPhoto.ok && photoFilePath) {
+      sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
     }
+    if (!sentPhoto.ok && fallbackText) {
+      return sendTelegramMessage(token, chatId, fallbackText);
+    }
+    if (!sentPhoto.ok) return sentPhoto;
   }
 
   const qrCode = result?.telegram?.photoQrCode;
-  const caption = result?.telegram?.photoCaption;
+  const qrCaption = result?.telegram?.photoCaption;
   if (!qrCode) return { ok: true };
 
-  return sendTelegramQrPhoto(token, chatId, qrCode, caption);
+  return sendTelegramQrPhoto(token, chatId, qrCode, qrCaption);
 }
 
 app.post("/webhooks/payos", async (req, res) => {

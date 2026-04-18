@@ -1,7 +1,14 @@
-const APP_BASE_URL = process.env.APP_BASE_URL || "http://localhost:3000";
-const MENU_IMAGE_PATH =
-  process.env.MENU_IMAGE_PATH ||
-  "C:\\Users\\nk\\.cursor\\projects\\c-Users-nk-OneDrive-Desktop-EntryTest\\assets\\c__Users_nk_AppData_Roaming_Cursor_User_workspaceStorage_afa247f2e4502163fc74db28857b1cff_images_Castea-52ee8401-67f3-45e1-a524-4c0d1e7f85ce.png";
+const APP_BASE_URL = (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+
+/** URL công khai để Telegram tải ảnh menu (bắt buộc khi deploy Linux/Render). */
+function getMenuPhotoUrl() {
+  const explicit = process.env.MENU_IMAGE_URL?.trim();
+  if (explicit) return explicit;
+  return `${APP_BASE_URL}/static/menu.png`;
+}
+
+/** Tuỳ chọn: đường dẫn file local (chủ yếu dev Windows). */
+const MENU_IMAGE_PATH = process.env.MENU_IMAGE_PATH?.trim() || null;
 
 const STAGE = {
   GREETING: "GREETING",
@@ -18,6 +25,7 @@ const STAGE = {
 
 module.exports = {
   APP_BASE_URL,
+  getMenuPhotoUrl,
   MENU_IMAGE_PATH,
   STAGE
 };

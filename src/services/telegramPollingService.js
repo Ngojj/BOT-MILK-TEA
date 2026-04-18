@@ -50,18 +50,21 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
         continue;
       }
 
-      const qrCode = normalizedResult.telegram?.photoQrCode;
+      const photoUrl = normalizedResult.telegram?.photoUrl;
       const photoFilePath = normalizedResult.telegram?.photoFilePath;
       const photoCaption = normalizedResult.telegram?.photoCaption;
-      if (photoFilePath) {
-        const sentPhoto = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
-        if (!sentPhoto.ok) {
-          const fallbackText = normalizedResult.telegram?.fallbackText;
-          if (fallbackText) {
-            await sendTelegramMessage(token, chatId, fallbackText);
-          } else {
-            console.error("[telegram] sendPhoto failed:", sentPhoto.status, sentPhoto.detail);
-          }
+      const fallbackText = normalizedResult.telegram?.fallbackText;
+      const qrCode = normalizedResult.telegram?.photoQrCode;
+
+      if (photoUrl || photoFilePath) {
+        let sentMenu = photoUrl ? await sendTelegramPhotoByUrl(token, chatId, photoUrl, photoCaption) : { ok: false };
+        if (!sentMenu.ok && photoFilePath) {
+          sentMenu = await sendTelegramPhotoFile(token, chatId, photoFilePath, photoCaption);
+        }
+        if (!sentMenu.ok && fallbackText) {
+          await sendTelegramMessage(token, chatId, fallbackText);
+        } else if (!sentMenu.ok) {
+          console.error("[telegram] sendPhoto (menu) failed:", sentMenu.status, sentMenu.detail);
         }
       }
       if (!qrCode) continue;
@@ -138,6 +141,31 @@ async function sendTelegramQrPhoto(token, chatId, qrCode, caption) {
   const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
     method: "POST",
     body: form
+  });
+
+  if (!sendRes.ok) {
+    return {
+      ok: false,
+      status: sendRes.status,
+      detail: await sendRes.text().catch(() => "")
+    };
+  }
+  return { ok: true, status: 200 };
+}
+
+async function sendTelegramPhotoByUrl(token, chatId, photoUrl, caption) {
+  if (!photoUrl) return { ok: true, status: 200 };
+
+  const body = {
+    chat_id: chatId,
+    photo: photoUrl
+  };
+  if (caption) body.caption = caption;
+
+  const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
   });
 
   if (!sendRes.ok) {
