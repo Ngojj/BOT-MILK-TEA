@@ -12,16 +12,36 @@ const {
 const { createTelegramPollingService } = require("./services/telegramPollingService");
 const { verifyWebhookPayload, isPayOSConfigured } = require("./services/payosService");
 const { paymentReceivedThankYou } = require("./services/chatbot/chatTone");
+const { getAllOrders, updateOrderStatus } = require("./services/chatbot/orderStore");
 const QRCode = require("qrcode");
 
 const app = express();
 app.use(express.json());
-app.use("/static", express.static(path.join(__dirname, "../static")));
+
+function basicAuth(req, res, next) {
+  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+  const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+  const ADMIN_PASS = process.env.ADMIN_PASS || 'castea123';
+
+  if (login && password && login === ADMIN_USER && password === ADMIN_PASS) {
+    return next();
+  }
+
+  res.set('WWW-Authenticate', 'Basic realm="Castea Admin"');
+  res.status(401).send('Xác thực thất bại.');
+}
+
+app.use("/static", basicAuth, express.static(path.join(__dirname, "../static")));
+app.use("/api/orders", basicAuth);
 
 const PORT = Number(process.env.PORT || 3000);
 /** Ảnh menu trong repo — dùng upload trực tiếp lên Telegram khi gửi bằng URL thất bại. */
 const MENU_STATIC_FILE = path.join(__dirname, "../static/menu.png");
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const ADMIN_TELEGRAM_CHAT_ID = process.env.ADMIN_TELEGRAM_CHAT_ID;
+const ADMIN_TELEGRAM_BOT_TOKEN = process.env.ADMIN_TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN;
 const TELEGRAM_MODE = (process.env.TELEGRAM_MODE || "webhook").toLowerCase();
 const TELEGRAM_DEDUP_TTL_MS = 10 * 60 * 1000;
 const processedTelegramMessages = new Map();
@@ -51,6 +71,35 @@ function shouldSkipDuplicateTelegramMessage(chatId, messageId) {
   return false;
 }
 
+async function notifyAdminNewOrder(order) {
+  if (!ADMIN_TELEGRAM_CHAT_ID || !ADMIN_TELEGRAM_BOT_TOKEN) return;
+  const itemsText = (order.items || []).map(item => {
+    let text = `- ${item.quantity}x ${item.name} (Size ${item.size})`;
+    if (item.toppings && item.toppings.length > 0) {
+      text += `\n  + Topping: ${item.toppings.map(t => t.name).join(', ')}`;
+    }
+    return text;
+  }).join("\n");
+  
+  const paymentMethodText = order.payment_method === 'transfer' ? 'Chuyển khoản' : 'COD';
+  
+  const msg = `🚨 ĐƠN HÀNG MỚI #${order.order_id}\n` +
+              `------------------------\n` +
+              `${itemsText}\n` +
+              `------------------------\n` +
+              `💰 Tổng: ${new Intl.NumberFormat('vi-VN').format(order.total)}đ\n` +
+              `💳 Thanh toán: ${paymentMethodText}\n` +
+              `🙎 Khách: ${order.customer?.name || ''} - ${order.customer?.phone || ''}\n` +
+              `📍 Địa chỉ: ${order.customer?.address || ''}\n` +
+              (order.customer?.note ? `📝 Ghi chú: ${order.customer.note}` : '');
+              
+  try {
+    await sendTelegramMessage(ADMIN_TELEGRAM_BOT_TOKEN, ADMIN_TELEGRAM_CHAT_ID, msg);
+  } catch (err) {
+    console.error("[telegram] gui thong bao admin that bai:", err.message);
+  }
+}
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "milk-tea-chatbot-backend", telegramMode: TELEGRAM_MODE });
 });
@@ -73,6 +122,7 @@ app.get("/", (_req, res) => {
         <h1>Milk Tea Chatbot Backend dang chay</h1>
         <p>Server nay la backend API. Khach nhan tin tren Telegram se duoc tra loi tu dong.</p>
         <ul>
+          <li>Admin Dashboard: <a href="/static/dashboard.html">/static/dashboard.html</a> </li>
           <li>Health check: <a href="/health">/health</a></li>
           <li>Menu (JSON): <a href="/api/menu">/api/menu</a></li>
         </ul>
@@ -93,9 +143,38 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Thieu customerId hoac message" });
     }
     const result = await handleMessage(String(customerId), String(message));
+    if (result?.order && result.stage === "FINALIZED") {
+      await notifyAdminNewOrder(result.order);
+    }
     return res.json(result);
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/orders", (_req, res) => {
+  try {
+    const orders = getAllOrders();
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/orders/:id/status", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: "Missing status" });
+    }
+    const updated = updateOrderStatus(id, status);
+    if (!updated) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -122,6 +201,9 @@ app.post("/webhooks/telegram", async (req, res) => {
     }
 
     const result = await handleMessage(String(chatId), String(text));
+    if (result?.order && result.stage === "FINALIZED") {
+      await notifyAdminNewOrder(result.order);
+    }
     if (!TELEGRAM_BOT_TOKEN) {
       return res.status(500).json({
         error: "Chua cau hinh TELEGRAM_BOT_TOKEN",
@@ -301,6 +383,9 @@ app.post("/webhooks/payos", async (req, res) => {
           if (!sent.ok) {
             console.error("[payos] gui tin cam on Telegram loi:", sent.detail || "");
           }
+          if (ADMIN_TELEGRAM_CHAT_ID && ADMIN_TELEGRAM_BOT_TOKEN) {
+            await sendTelegramMessage(ADMIN_TELEGRAM_BOT_TOKEN, ADMIN_TELEGRAM_CHAT_ID, `💸 Đơn hàng #${updated.order.order_id} đã được thanh toán chuyển khoản thành công!`);
+          }
         } catch (err) {
           console.error("[payos] gui tin cam on Telegram:", err?.message || err);
         }
@@ -354,7 +439,11 @@ app.listen(PORT, () => {
         if (shouldSkipDuplicateTelegramMessage(chatId, metadata.messageId)) {
           return null;
         }
-        return handleMessage(chatId, text);
+        const result = await handleMessage(chatId, text);
+        if (result?.order && result.stage === "FINALIZED") {
+          await notifyAdminNewOrder(result.order);
+        }
+        return result;
       }
     });
     polling.start();

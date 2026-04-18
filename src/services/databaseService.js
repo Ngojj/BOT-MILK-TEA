@@ -124,12 +124,35 @@ function markOrderPaidByPayOSOrderCode(orderCode) {
   };
 }
 
+function getAllOrders() {
+  const rows = db.prepare("SELECT data FROM orders ORDER BY created_at DESC").all();
+  return rows.map((row) => JSON.parse(row.data));
+}
+
+function updateOrderStatus(orderId, status) {
+  const row = db.prepare("SELECT data FROM orders WHERE order_id = ?").get(String(orderId));
+  if (!row) return null;
+  
+  const order = JSON.parse(row.data);
+  order.status = status;
+  
+  db.prepare(`
+    UPDATE orders
+    SET status = ?, data = ?, updated_at = ?
+    WHERE order_id = ?
+  `).run(status, JSON.stringify(order), nowIso(), String(orderId));
+  
+  return order;
+}
+
 module.exports = {
   getSessionByCustomerId,
   saveSession,
   deleteSession,
   saveOrder,
   getOrderByPayOSOrderCode,
-  markOrderPaidByPayOSOrderCode
+  markOrderPaidByPayOSOrderCode,
+  getAllOrders,
+  updateOrderStatus
 };
 

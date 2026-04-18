@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Castea - Quản Lý Đơn Hàng</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-hover: #1e40af;
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .header h1 {
+      color: var(--primary-hover);
+      font-size: 24px;
+    }
+    .header span {
+      background: var(--primary);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 99px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .column {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+      min-height: 500px;
+    }
+
+    .column-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .column-count {
+      background: var(--bg-color);
+      color: var(--primary-hover);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .order-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .order-id { font-weight: 700; color: var(--primary-hover); }
+    .order-time { color: var(--text-muted); font-size: 12px; }
+
+    .customer-info {
+      background: var(--bg-color);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .customer-info p { margin-bottom: 4px; }
+    .customer-info strong { color: var(--text-main); }
+
+    .items-list {
+      margin-bottom: 16px;
+    }
+    .item {
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 15px;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-name { font-weight: 600; display: flex; justify-content: space-between; }
+    .item-toppings {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding-left: 12px;
+      border-left: 2px solid var(--primary);
+    }
+
+    .payment-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .payment-paid { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .payment-transfer { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .payment-cod { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 13px;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+    .btn-outline:hover { background: var(--bg-color); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Castea Admin</h1>
+    <span id="total-revenue">Doanh thu: 0đ</span>
+  </div>
+
+  <div class="columns">
+    <!-- Cột Mới Nhận -->
+    <div class="column">
+      <div class="column-title">
+        📝 Đơn Mới Nhận <span class="column-count" id="count-pending">0</span>
+      </div>
+      <div id="list-pending"></div>
+    </div>
+
+    <!-- Cột Đang Làm -->
+    <div class="column">
+      <div class="column-title">
+        👩‍🍳 Đang Làm Món <span class="column-count" id="count-preparing">0</span>
+      </div>
+      <div id="list-preparing"></div>
+    </div>
+
+    <!-- Cột Đang Giao -->
+    <div class="column">
+      <div class="column-title">
+        🛵 Đang Giao Hàng <span class="column-count" id="count-delivering">0</span>
+      </div>
+      <div id="list-delivering"></div>
+    </div>
+
+    <!-- Cột Hoàn Thành -->
+    <div class="column">
+      <div class="column-title">
+        ✅ Hoàn Thành <span class="column-count" id="count-completed">0</span>
+      </div>
+      <div id="list-completed"></div>
+    </div>
+  </div>
+
+  <script>
+    function formatVnd(amount) {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' - ' + date.toLocaleDateString('vi-VN');
+    }
+
+    function getPaymentBadge(order) {
+      if (order.payment_status === 'paid') {
+        return `<span class="payment-badge payment-paid">Đã thanh toán (CK)</span>`;
+      }
+      if (order.payment_method === 'transfer') {
+        return `<span class="payment-badge payment-transfer">Chờ CK (Chưa nộp)</span>`;
+      }
+      return `<span class="payment-badge payment-cod">Thu hộ (COD)</span>`;
+    }
+
+    function renderOrderItems(cart) {
+      if (!cart || !Array.isArray(cart)) return '';
+      return cart.map(item => {
+        let toppingsHtml = '';
+        if (item.toppings && item.toppings.length > 0) {
+          const tops = item.toppings.map(t => `+ ${t.name}`).join('<br>');
+          toppingsHtml = `<div class="item-toppings">${tops}</div>`;
+        }
+        return `
+          <div class="item">
+            <div class="item-name">
+              <span>${item.quantity}x ${item.name} (Size ${item.size})</span>
+              <span>${formatVnd(item.subtotal)}</span>
+            </div>
+            ${toppingsHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderOrderCard(order) {
+      const { status } = order;
+      // Normalizing status mapping
+      const currentStatus = status || 'pending';
+      const actualStatus = currentStatus === 'confirmed' ? 'pending' : currentStatus;
+
+      let actionsHtml = '';
+      if (actualStatus === 'pending') {
+        actionsHtml = `<button class="btn btn-primary" onclick="updateStatus('${order.order_id}', 'preparing')">Bắt đầu làm</button>`;
+      } else if (actualStatus === 'preparing') {
+        actionsHtml = `<button class="btn btn-primary" onclick="updateStatus('${order.order_id}', 'delivering')">Giao hàng</button>`;
+      } else if (actualStatus === 'delivering') {
+        actionsHtml = `<button class="btn btn-success" onclick="updateStatus('${order.order_id}', 'completed')">Đã nhận</button>`;
+      } else {
+        actionsHtml = `<button class="btn btn-outline" disabled>Hoàn tất</button>`;
+      }
+
+      return `
+        <div class="order-card" id="order-${order.order_id}">
+          <div class="order-header">
+            <span class="order-id">#${order.order_id}</span>
+            <span class="order-time">${formatDate(order.created_at)}</span>
+          </div>
+          ${getPaymentBadge(order)}
+          
+          <div class="customer-info">
+            <p>🙎‍♂️ <strong>${order.customer?.name || 'Khách'}</strong> (${order.customer?.phone || 'N/A'})</p>
+            <p>📍 <strong>${order.customer?.address || 'Tại quán'}</strong></p>
+            ${order.customer?.note ? `<p>📝 Ghi chú: <em>${order.customer.note}</em></p>` : ''}
+          </div>
+
+          <div class="items-list">
+            ${renderOrderItems(order.items)}
+          </div>
+
+          <div style="font-weight: bold; margin-bottom: 12px; text-align: right;">
+            Tổng: <span style="color: var(--primary-hover)">${formatVnd(order.total)}</span>
+          </div>
+
+          <div class="actions">
+            ${actionsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/orders');
+        const orders = await res.json();
+        
+        const lists = {
+          pending: [],
+          preparing: [],
+          delivering: [],
+          completed: []
+        };
+        let revenue = 0;
+
+        orders.forEach(order => {
+          const status = order.status || 'pending';
+          const actualStatus = status === 'confirmed' ? 'pending' : status;
+          
+          if (lists[actualStatus]) {
+            lists[actualStatus].push(order);
+          } else {
+            lists.pending.push(order); // fallback
+          }
+
+          if (actualStatus === 'completed' || order.payment_status === 'paid') {
+            revenue += (order.total || 0);
+          }
+        });
+
+        Object.keys(lists).forEach(status => {
+          const el = document.getElementById(`list-${status}`);
+          const countEl = document.getElementById(`count-${status}`);
+          countEl.textContent = lists[status].length;
+          
+          if (lists[status].length === 0) {
+            el.innerHTML = `<div class="empty-state">Trống trải quá hà... 🍃</div>`;
+          } else {
+            el.innerHTML = lists[status].map(renderOrderCard).join('');
+          }
+        });
+
+        document.getElementById('total-revenue').textContent = `Doanh thu: ${formatVnd(revenue)}`;
+
+      } catch (err) {
+        console.error("Lỗi khi tải đơn hàng", err);
+      }
+    }
+
+    async function updateStatus(orderId, newStatus) {
+      try {
+        const btn = document.querySelector(`#order-${orderId} button`);
+        if (btn) btn.disabled = true;
+
+        const res = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (res.ok) {
+          loadOrders();
+        } else {
+          alert('Cập nhật thất bại rùi 😭');
+          if (btn) btn.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Có lỗi xảy ra!');
+      }
+    }
+
+    loadOrders();
+    setInterval(loadOrders, 5000); 
+  </script>
+</body>
+</html>

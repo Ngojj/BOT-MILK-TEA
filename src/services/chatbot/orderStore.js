@@ -1,7 +1,9 @@
 const {
   saveOrder,
   getOrderByPayOSOrderCode: getOrderByPayOSOrderCodeFromDb,
-  markOrderPaidByPayOSOrderCode: markOrderPaidByPayOSOrderCodeInDb
+  markOrderPaidByPayOSOrderCode: markOrderPaidByPayOSOrderCodeInDb,
+  getAllOrders: getAllOrdersFromDb,
+  updateOrderStatus: updateOrderStatusInDb
 } = require("../databaseService");
 
 function registerPayOSOrder(_orderCode, customerId, order) {
@@ -20,10 +22,20 @@ function markOrderPaidByPayOSOrderCode(orderCode) {
   return markOrderPaidByPayOSOrderCodeInDb(orderCode);
 }
 
+function getAllOrders() {
+  return getAllOrdersFromDb();
+}
+
+function updateOrderStatus(orderId, status) {
+  return updateOrderStatusInDb(orderId, status);
+}
+
 module.exports = {
   registerPayOSOrder,
   persistOrder,
   getOrderByPayOSOrderCode,
-  markOrderPaidByPayOSOrderCode
+  markOrderPaidByPayOSOrderCode,
+  getAllOrders,
+  updateOrderStatus
 };
 
