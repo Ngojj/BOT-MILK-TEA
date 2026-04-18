@@ -18,7 +18,7 @@ function formatMenu() {
     return acc;
   }, {});
 
-  const lines = ["📋 MENU HIỆN TẠI:", "────────────────────"];
+  const lines = ["📋 MENU CỦA SỐP NÈ:", "────────────────────"];
   for (const [category, items] of Object.entries(grouped)) {
     lines.push(`\n${category}:`);
     for (const item of items) {
@@ -30,12 +30,12 @@ function formatMenu() {
   for (const top of TOPPINGS) {
     lines.push(`- ${top.id} | ${top.name} | ${formatVnd(top.price)}`);
   }
-  lines.push("\nBạn muốn đặt món nào trước ạ? 🧋");
+  lines.push("\nĐÂY LÀ MENU CỦA SỐP NÈ. Khách muốn order luôn hay cần sốp tư vấn thêm món hong ạ? 🧋");
   return lines.join("\n");
 }
 
 function formatOrderSummary(cart) {
-  const lines = ["📋 ĐƠN HÀNG CỦA BẠN:", "─────────────────────"];
+  const lines = ["📋 ĐƠN HÀNG CỦA KHÁCH NEK:", "─────────────────────"];
   cart.forEach((item, index) => {
     lines.push(`${index + 1}. ${item.name} - Size ${item.size} x${item.quantity}`);
     if ((item.toppings || []).length > 0) {
@@ -51,7 +51,7 @@ function formatOrderSummary(cart) {
   lines.push("─────────────────────");
   lines.push(`💰 TỔNG CỘNG: ${formatVnd(calcOrderTotal(cart))}`);
   lines.push("─────────────────────");
-  lines.push("Đơn này đúng chưa bạn ơi? ✅");
+  lines.push("Đơn này chuẩn chưa khách iu ơi? ✅");
   return lines.join("\n");
 }
 

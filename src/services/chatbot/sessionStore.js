@@ -5,6 +5,8 @@ const {
 } = require("../databaseService");
 const { STAGE } = require("./constants");
 
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
 const sessions = new Map();
 
 function createDefaultSession() {
@@ -15,7 +17,8 @@ function createDefaultSession() {
     customer: { name: null, phone: null, address: null, note: null },
     paymentMethod: null,
     paymentStatus: "pending",
-    latestOrder: null
+    latestOrder: null,
+    updatedAt: Date.now()
   };
 }
 
@@ -24,7 +27,13 @@ function getSession(customerId) {
     const fromDb = getSessionByCustomerId(customerId);
     sessions.set(customerId, fromDb || createDefaultSession());
   }
-  return sessions.get(customerId);
+
+  const session = sessions.get(customerId);
+  if (session && session.updatedAt && (Date.now() - session.updatedAt > SESSION_TTL_MS)) {
+    resetSessionData(session);
+  }
+
+  return session;
 }
 
 function getCachedSession(customerId) {
@@ -32,6 +41,7 @@ function getCachedSession(customerId) {
 }
 
 function persistSession(customerId, session) {
+  session.updatedAt = Date.now();
   saveSession(customerId, session);
 }
 
@@ -48,6 +58,7 @@ function resetSessionData(session) {
   session.paymentMethod = null;
   session.paymentStatus = "pending";
   session.latestOrder = null;
+  session.updatedAt = Date.now();
 }
 
 module.exports = {

@@ -68,7 +68,7 @@ function isAffirmative(text) {
 
 function isNegative(text) {
   const normalized = normalizeText(text);
-  return /\b(khong them|khong dung|khong|ko|no|thoi)\b|^k$/.test(normalized);
+  return /\b(khong them|khong dung|chua dung|chua|chuaw|khong+|kho+ng+|ko|kh|no|thoi)\b|^k$/.test(normalized);
 }
 
 module.exports = {

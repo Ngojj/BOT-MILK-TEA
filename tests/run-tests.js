@@ -21,6 +21,8 @@ process.env.PAYOS_CHECKSUM_KEY = "";
 const { handleMessage, getSession, resetSession } = require("../src/services/chatbotService");
 const { STAGE } = require("../src/services/chatbot/constants");
 const { normalizeText } = require("../src/utils/text");
+const { startItemDraft } = require("../src/services/chatbot/catalogParser");
+const { collectMissingItemFields } = require("../src/services/chatbot/itemDraftFlow");
 
 async function runCase(name, fn) {
   try {
@@ -221,6 +223,54 @@ async function testCommonDrinkAbbreviationsStartOrderFlow() {
   }
 }
 
+async function testTopingTypoAndChanTrauShouldStillAddToppingFlow() {
+  const id = `t-toping-chan-trau-${Date.now()}`;
+
+  await handleMessage(id, "cho mot ca phe den");
+  await handleMessage(id, "size l");
+  const res = await handleMessage(id, "them mot chan trau");
+
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  const session = getSession(id);
+  assert.equal(session.cart.length, 1);
+  assert.equal(session.cart[0].toppings.length, 1);
+  assert.equal(session.cart[0].toppings[0].topping_id, "TOP01");
+
+  resetSession(id);
+}
+
+async function testConfirmOrderAcceptsChuawAsDenyFlow() {
+  const id = `t-confirm-chuaw-${Date.now()}`;
+
+  await handleMessage(id, "CF01 size L x1");
+  await handleMessage(id, "khong");
+  await handleMessage(id, "khong");
+  const res = await handleMessage(id, "chuaw");
+
+  assert.equal(res.stage, STAGE.COLLECTING_ITEM);
+
+  resetSession(id);
+}
+
+async function testGenericAddToppingRequestShouldAskClarifyOnlyFlow() {
+  const id = `t-confirm-generic-top-${Date.now()}`;
+
+  await handleMessage(id, "ca phe den size M x1");
+  await handleMessage(id, "khong");
+  let res = await handleMessage(id, "khong");
+  assert.equal(res.stage, STAGE.CONFIRM_ORDER);
+
+  res = await handleMessage(id, "toi muon them topping");
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  assert.ok(normalizeText(res.reply).includes("topping"));
+
+  const session = getSession(id);
+  assert.equal(session.cart.length, 1);
+  assert.equal(session.cart[0].toppings.length, 0);
+
+  resetSession(id);
+}
+
 async function testAddressCapturedFromFirstMessageFlow() {
   const id = `t-addr-first-${Date.now()}`;
 
@@ -322,6 +372,239 @@ async function testAccentedAddressPrefixSuffixCleanedFlow() {
   resetSession(id);
 }
 
+async function testStartItemDraftSupportsLineItemsBreakdownFlow() {
+  const hint = {
+    intent: "order",
+    line_items: [
+      { item_code: "CF02", item_name: "Cà Phê Sữa", size: "L", quantity: 2 },
+      { item_code: "CF02", item_name: "Cà Phê Sữa", size: "M", quantity: 1 }
+    ]
+  };
+  const draft = startItemDraft("cho 3 ca phe sua", hint);
+
+  assert.ok(draft);
+  assert.equal(draft.item_id, "CF02");
+  assert.equal(draft.quantity, 3);
+  assert.ok(Array.isArray(draft.size_breakdown));
+  assert.equal(draft.size_breakdown.length, 2);
+  assert.equal(draft.size_breakdown[0].size, "L");
+  assert.equal(draft.size_breakdown[0].quantity, 2);
+  assert.equal(draft.size_breakdown[1].size, "M");
+  assert.equal(draft.size_breakdown[1].quantity, 1);
+}
+
+async function testCollectMissingFieldsUsesLineItemsByItemNameFlow() {
+  const session = {
+    stage: STAGE.COLLECTING_ITEM,
+    cart: [],
+    currentItem: {
+      item_id: "CF01",
+      name: "Cà Phê Đen",
+      size: null,
+      quantity: null,
+      unit_price: null,
+      toppings: null,
+      subtotal: 0
+    }
+  };
+
+  const hint = {
+    intent: "deny",
+    line_items: [
+      { item_name: "Cà Phê Đen", size: "L", quantity: 1 },
+      { item_name: "Trà Sữa Trân Châu Đen", size: "M", quantity: 1 }
+    ]
+  };
+
+  const reply = collectMissingItemFields(session, "khong", hint);
+  assert.equal(session.stage, STAGE.ASK_ADD_MORE);
+  assert.equal(session.cart.length, 2);
+  assert.equal(session.cart[0].item_id, "CF01");
+  assert.equal(session.cart[0].size, "L");
+  assert.equal(session.cart[1].item_id, "TS01");
+  assert.equal(session.cart[1].size, "M");
+  assert.ok(normalizeText(reply).includes("ca phe den"));
+  assert.ok(normalizeText(reply).includes("tra sua tran chau den"));
+}
+
+async function testLineItemsWithChanTrauTypoStillMapsDrinkFlow() {
+  const session = {
+    stage: STAGE.COLLECTING_ITEM,
+    cart: [],
+    currentItem: {
+      item_id: "CF01",
+      name: "Cà Phê Đen",
+      size: null,
+      quantity: null,
+      unit_price: null,
+      toppings: null,
+      subtotal: 0
+    }
+  };
+
+  const hint = {
+    intent: "deny",
+    line_items: [
+      { item_name: "Cà Phê Đen", size: "L", quantity: 1 },
+      { item_name: "Trà sữa chân trâu", size: "M", quantity: 1 }
+    ]
+  };
+
+  collectMissingItemFields(session, "khong", hint);
+  assert.equal(session.stage, STAGE.ASK_ADD_MORE);
+  assert.equal(session.cart.length, 2);
+  assert.equal(session.cart[0].item_id, "CF01");
+  assert.equal(session.cart[1].item_id, "TS01");
+}
+
+async function testStartItemDraftKeepsMultiItemsForDifferentDrinksFlow() {
+  const hint = {
+    intent: "order",
+    line_items: [
+      { item_code: "TS01", item_name: "Trà Sữa Trân Châu Đen", size: "L", quantity: 1 },
+      { item_code: "CF01", item_name: "Cà Phê Đen", size: "M", quantity: 1 }
+    ]
+  };
+
+  const draft = startItemDraft("cho mot ts size l va mot cf den size m", hint);
+  assert.ok(draft);
+  assert.ok(Array.isArray(draft.multi_items));
+  assert.equal(draft.multi_items.length, 2);
+  assert.equal(draft.multi_items[0].item_id, "TS01");
+  assert.equal(draft.multi_items[0].size, "L");
+  assert.equal(draft.multi_items[1].item_id, "CF01");
+  assert.equal(draft.multi_items[1].size, "M");
+}
+
+async function testStartItemDraftDefaultsMissingLineItemQuantityToOneFlow() {
+  const hint = {
+    intent: "order",
+    line_items: [
+      { item_code: "CF01", item_name: "Cà Phê Đen", size: "M", quantity: 1 },
+      { item_code: "CF02", item_name: "Cà Phê Sữa", size: "L", quantity: null }
+    ]
+  };
+
+  const draft = startItemDraft("lay cho toi mot ca phe den size m va mot ca phe sua size l", hint);
+  assert.ok(draft);
+  assert.ok(Array.isArray(draft.multi_items));
+  assert.equal(draft.multi_items.length, 2);
+  assert.equal(draft.multi_items[0].item_id, "CF01");
+  assert.equal(draft.multi_items[0].quantity, 1);
+  assert.equal(draft.multi_items[1].item_id, "CF02");
+  assert.equal(draft.multi_items[1].quantity, 1);
+}
+
+async function testCollectMissingFieldsFinalizesExistingMultiItemsFlow() {
+  const session = {
+    stage: STAGE.COLLECTING_ITEM,
+    cart: [],
+    currentItem: {
+      item_id: "TS01",
+      name: "Trà Sữa Trân Châu Đen",
+      size: "L",
+      quantity: 2,
+      unit_price: 45000,
+      multi_items: [
+        { item_id: "TS01", name: "Trà Sữa Trân Châu Đen", size: "L", quantity: 1, unit_price: 45000 },
+        { item_id: "CF01", name: "Cà Phê Đen", size: "M", quantity: 1, unit_price: 25000 }
+      ],
+      toppings: null,
+      subtotal: 0
+    }
+  };
+
+  collectMissingItemFields(session, "khong", { intent: "deny", line_items: [] });
+  assert.equal(session.stage, STAGE.ASK_ADD_MORE);
+  assert.equal(session.cart.length, 2);
+  assert.equal(session.cart[0].item_id, "TS01");
+  assert.equal(session.cart[0].size, "L");
+  assert.equal(session.cart[1].item_id, "CF01");
+  assert.equal(session.cart[1].size, "M");
+}
+
+async function testKhoongAtToppingPromptMeansNoToppingFlow() {
+  const id = `t-no-top-khoong-${Date.now()}`;
+
+  await handleMessage(id, "cho mot ca phe den size L");
+  const res = await handleMessage(id, "khoong");
+
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  const session = getSession(id);
+  assert.equal(session.cart.length, 1);
+  assert.equal(session.cart[0].toppings.length, 0);
+
+  resetSession(id);
+}
+
+async function testMultiItemsInferSizeByEachItemMentionFlow() {
+  const session = {
+    stage: STAGE.COLLECTING_ITEM,
+    cart: [],
+    currentItem: {
+      item_id: "TS01",
+      name: "Trà Sữa Trân Châu Đen",
+      size: "L",
+      quantity: null,
+      unit_price: null,
+      toppings: null,
+      subtotal: 0
+    }
+  };
+
+  const hint = {
+    intent: "deny",
+    line_items: [
+      { item_code: "TS01", item_name: "Trà Sữa Trân Châu Đen", size: "L", quantity: 1 },
+      { item_code: "CF01", item_name: "Cà Phê Đen", size: null, quantity: 1 }
+    ]
+  };
+
+  collectMissingItemFields(session, "cho mot tra sua tran chau size L va mot ca phe den size M", hint);
+  assert.equal(session.stage, STAGE.ASK_ADD_MORE);
+  assert.equal(session.cart.length, 2);
+  assert.equal(session.cart[0].item_id, "TS01");
+  assert.equal(session.cart[0].size, "L");
+  assert.equal(session.cart[1].item_id, "CF01");
+  assert.equal(session.cart[1].size, "M");
+}
+
+async function testSingleMessageTwoDrinksDoNotDropSecondItemFlow() {
+  const id = `t-two-drinks-one-msg-${Date.now()}`;
+
+  let res = await handleMessage(id, "lay cho toi 1 ca phe den size M va 1 ca phe sua size L");
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  const sessionAfterAdd = getSession(id);
+  assert.equal(sessionAfterAdd.cart.length, 2);
+  assert.equal(sessionAfterAdd.cart[0].item_id, "CF01");
+  assert.equal(sessionAfterAdd.cart[0].size, "M");
+  assert.equal(sessionAfterAdd.cart[1].item_id, "CF02");
+  assert.equal(sessionAfterAdd.cart[1].size, "L");
+
+  res = await handleMessage(id, "khoong");
+  assert.equal(res.stage, STAGE.CONFIRM_ORDER);
+  const summary = normalizeText(res.reply);
+  assert.ok(summary.includes("ca phe den"));
+  assert.ok(summary.includes("ca phe sua"));
+
+  resetSession(id);
+}
+
+async function testConfirmOrderAllowsToppingEditRequestFlow() {
+  const id = `t-confirm-edit-topping-${Date.now()}`;
+
+  await handleMessage(id, "CF04 size M x1");
+  await handleMessage(id, "khong topping");
+  let res = await handleMessage(id, "khong");
+  assert.equal(res.stage, STAGE.CONFIRM_ORDER);
+
+  res = await handleMessage(id, "toi muon them toping");
+  assert.equal(res.stage, STAGE.ASK_ADD_MORE);
+  assert.ok(normalizeText(res.reply).includes("topping"));
+
+  resetSession(id);
+}
+
 async function main() {
   await runCase("flow COD tu den lay qua tung stage", testCodPickupFlow);
   await runCase("validate dia chi: input mo ho se bi hoi lai", testAddressValidationFlow);
@@ -337,12 +620,25 @@ async function main() {
   await runCase("xac nhan don bang tu roi se qua buoc nhap ten", testConfirmOrderAcceptsRoiFlow);
   await runCase("viet tat cf den van vao duoc flow dat mon", testCfDenAbbreviationStillStartsOrderFlow);
   await runCase("nhan dien viet tat cac nhom mon pho bien", testCommonDrinkAbbreviationsStartOrderFlow);
+  await runCase("toping typo + chan trau van parse duoc topping mac dinh", testTopingTypoAndChanTrauShouldStillAddToppingFlow);
+  await runCase("chuaw o buoc xac nhan duoc hieu la chua dung", testConfirmOrderAcceptsChuawAsDenyFlow);
+  await runCase("yeu cau them topping chung chung thi chi hoi lai, khong auto update", testGenericAddToppingRequestShouldAskClarifyOnlyFlow);
   await runCase("nho dia chi duoc noi ngay tu cau dat mon dau tien", testAddressCapturedFromFirstMessageFlow);
   await runCase("lam sach dia chi lay tu cau dat mon", testAddressCandidateIsCleanedFlow);
   await runCase("tran chau den khong bi match them tran chau trang", testToppingDenKhongBiMatchTrangFlow);
   await runCase("khong da nhung van co topping thi topping phai duoc giu lai", testKhongDaVanThemDuocToppingFlow);
   await runCase("typo chan trau trang van parse dung topping", testChanTrauTrangTypoStillParsesToppingFlow);
   await runCase("dia chi co tien to/hau to lich su duoc lam sach", testAccentedAddressPrefixSuffixCleanedFlow);
+  await runCase("startItemDraft hieu line_items nhieu size", testStartItemDraftSupportsLineItemsBreakdownFlow);
+  await runCase("collectMissingItemFields dung line_items theo item_name", testCollectMissingFieldsUsesLineItemsByItemNameFlow);
+  await runCase("line_items voi typo chan trau van map dung mon", testLineItemsWithChanTrauTypoStillMapsDrinkFlow);
+  await runCase("startItemDraft giu du multi_items cho nhieu mon", testStartItemDraftKeepsMultiItemsForDifferentDrinksFlow);
+  await runCase("line_items thieu quantity van mac dinh 1 cho moi mon", testStartItemDraftDefaultsMissingLineItemQuantityToOneFlow);
+  await runCase("collectMissingItemFields chot du multi_items san co", testCollectMissingFieldsFinalizesExistingMultiItemsFlow);
+  await runCase("tra loi khoong o buoc topping duoc xem la khong topping", testKhoongAtToppingPromptMeansNoToppingFlow);
+  await runCase("nhieu mon phai suy size theo tung mon, khong lay nham size dau", testMultiItemsInferSizeByEachItemMentionFlow);
+  await runCase("dat 2 mon trong 1 cau khong bi roi mon thu 2", testSingleMessageTwoDrinksDoNotDropSecondItemFlow);
+  await runCase("o buoc xac nhan van yeu cau sua topping duoc", testConfirmOrderAllowsToppingEditRequestFlow);
 
   if (process.exitCode) {
     console.error("One or more tests failed.");

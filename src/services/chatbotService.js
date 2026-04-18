@@ -41,6 +41,7 @@ const {
   askItemName,
   askAddMore,
   askConfirmOrder,
+  askToppingClarify,
   askName,
   askPhone,
   invalidPhone,
@@ -56,7 +57,15 @@ const {
   unknown,
   paymentCreatedPayOS,
   payosCreateFailed,
-  orderConfirmed
+  orderConfirmed,
+  askMessageContent,
+  menuPhotoCaptionText,
+  consultMenu,
+  askNextItemOrConfirm,
+  askEditOrderDirection,
+  acknowledgePreviousAddress,
+  retrievePreviousAddress,
+  manualTransferNotice
 } = require("./chatbot/chatTone");
 
 function markOrderPaidByPayOSOrderCode(orderCode) {
@@ -141,7 +150,7 @@ async function handleMessage(customerId, message) {
   const rawText = (message || "").trim();
 
   if (!rawText) {
-    return finalize({ reply: "Bạn nhắn giúp mình nội dung cần hỗ trợ nhé 😊", stage: session.stage });
+    return finalize({ reply: askMessageContent(), stage: session.stage });
   }
 
   const hint = await analyzeCustomerMessage(rawText, { stage: session.stage });
@@ -151,6 +160,7 @@ async function handleMessage(customerId, message) {
   if (contextualAddress && !session.customer.address) {
     session.customer.address = contextualAddress;
   }
+  
   const isCancelOrder =
     hint?.intent === "cancel" ||
     (!hasNluIntent(hint) &&
@@ -161,13 +171,7 @@ async function handleMessage(customerId, message) {
 
   if (isCancelOrder) {
     resetSession(customerId);
-    return finalize(
-      {
-        reply: cancelDone(),
-        stage: STAGE.GREETING
-      },
-      { persist: false }
-    );
+    return finalize({ reply: cancelDone(), stage: STAGE.GREETING }, { persist: false });
   }
 
   if (hint?.intent === "menu" || (!hasNluIntent(hint) && (normalizedRaw === "menu" || /\bmenu\b/.test(normalizedRaw) || normalizedRaw.includes("xem menu")))) {
@@ -177,7 +181,7 @@ async function handleMessage(customerId, message) {
         menu: true,
         photoUrl: getMenuPhotoUrl(),
         photoFilePath: MENU_IMAGE_PATH,
-        menuPhotoCaption: "📋 MENU HIỆN TẠI\n\nBạn muốn đặt món nào trước ạ? 🧋",
+        menuPhotoCaption: menuPhotoCaptionText(),
         fallbackText: formatMenu()
       },
       stage: session.stage
@@ -186,13 +190,11 @@ async function handleMessage(customerId, message) {
 
   if (hint?.intent === "reset" || (!hasNluIntent(hint) && (normalizedRaw === "reset" || normalizedRaw.includes("lam lai don moi")))) {
     resetSession(customerId);
-    return finalize(
-      {
-        reply: resetDone(),
-        stage: STAGE.GREETING
-      },
-      { persist: false }
-    );
+    return finalize({ reply: resetDone(), stage: STAGE.GREETING }, { persist: false });
+  }
+
+  if (hint?.intent === "consult" || (!hasNluIntent(hint) && /\b(tu van|goi y|chon mon|recommend|mon nao ngon)\b/.test(normalizedRaw))) {
+    return finalize({ reply: consultMenu(), stage: session.stage });
   }
 
   if (session.stage === STAGE.FINALIZED) {
@@ -200,270 +202,274 @@ async function handleMessage(customerId, message) {
     return finalize({ reply: readyNewOrder(), stage: session.stage });
   }
 
-  if (session.stage === STAGE.GREETING) {
+  switch (session.stage) {
+    case STAGE.GREETING:
+      return handleGreetingState(session, finalize, text, hint);
+    case STAGE.COLLECTING_ITEM:
+      return handleCollectingItemState(session, finalize, rawText, text, hint);
+    case STAGE.ASK_ADD_MORE:
+      return handleAskAddMoreState(session, finalize, rawText, text, hint, normalizedRaw);
+    case STAGE.CONFIRM_ORDER:
+      return handleConfirmOrderState(session, finalize, rawText, text, hint, normalizedRaw);
+    case STAGE.COLLECT_CUSTOMER_NAME:
+      return handleCollectCustomerNameState(session, finalize, rawText);
+    case STAGE.COLLECT_CUSTOMER_PHONE:
+      return handleCollectCustomerPhoneState(session, finalize, rawText);
+    case STAGE.COLLECT_CUSTOMER_ADDRESS:
+      return handleCollectCustomerAddressState(session, finalize, rawText, normalizedRaw);
+    case STAGE.COLLECT_CUSTOMER_NOTE:
+      return handleCollectCustomerNoteState(session, finalize, rawText, hint);
+    case STAGE.COLLECT_PAYMENT:
+      return await handleCollectPaymentState(customerId, session, finalize, rawText, hint, normalizedRaw);
+    default:
+      return finalize({ reply: unknown(), stage: session.stage });
+  }
+}
+
+function handleGreetingState(session, finalize, text, hint) {
+  const draft = startItemDraft(text, hint);
+  if (!draft) {
+    return finalize({ reply: greetingOpen(), stage: session.stage });
+  }
+  session.currentItem = draft;
+  session.stage = STAGE.COLLECTING_ITEM;
+  return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
+}
+
+function handleCollectingItemState(session, finalize, rawText, text, hint) {
+  if (session.cart.length > 0 && (hint?.intent === "deny" || (!hasNluIntent(hint) && isNegative(rawText)))) {
+    session.stage = STAGE.CONFIRM_ORDER;
+    return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
+  }
+
+  if (!session.currentItem) {
     const draft = startItemDraft(text, hint);
     if (!draft) {
-      return finalize({
-        reply: greetingOpen(),
-        stage: session.stage
-      });
+      return finalize({ reply: askItemName(), stage: session.stage });
     }
+    session.currentItem = draft;
+  } else {
+    updateItemIdentityIfMissing(session, text, hint);
+  }
+  return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
+}
+
+function handleAskAddMoreState(session, finalize, rawText, text, hint, normalizedRaw) {
+  const toppingUpdate = tryUpdateLastItemToppings(session, text, hint, normalizedRaw);
+  if (toppingUpdate) {
+    return finalize({ reply: toppingUpdate.reply, stage: session.stage });
+  }
+
+  const draft = startItemDraft(text, hint);
+  if (draft) {
     session.currentItem = draft;
     session.stage = STAGE.COLLECTING_ITEM;
     return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
   }
-
-  if (session.stage === STAGE.COLLECTING_ITEM) {
-    if (session.cart.length > 0 && (hint?.intent === "deny" || (!hasNluIntent(hint) && isNegative(rawText)))) {
-      session.stage = STAGE.CONFIRM_ORDER;
-      return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
-    }
-
-    if (!session.currentItem) {
-      const draft = startItemDraft(text, hint);
-      if (!draft) {
-        return finalize({
-          reply: askItemName(),
-          stage: session.stage
-        });
-      }
-      session.currentItem = draft;
-    } else {
-      updateItemIdentityIfMissing(session, text, hint);
-    }
-    return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
+  if (hint?.intent === "order" || isConfirmLike(rawText, hint)) {
+    session.stage = STAGE.COLLECTING_ITEM;
+    return finalize({ reply: askNextItemOrConfirm(), stage: session.stage });
   }
+  if (isDenyLike(rawText, hint)) {
+    session.stage = STAGE.CONFIRM_ORDER;
+    return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
+  }
+  return finalize({ reply: askAddMore(), stage: session.stage });
+}
 
-  if (session.stage === STAGE.ASK_ADD_MORE) {
+function handleConfirmOrderState(session, finalize, rawText, text, hint, normalizedRaw) {
+  const hasExplicitToppingWords = /\b(topping|toping|top)\b/.test(normalizedRaw);
+  const hasToppingPayload =
+    (Array.isArray(hint?.topping_codes) && hint.topping_codes.length > 0) ||
+    (Array.isArray(hint?.topping_names) && hint.topping_names.length > 0);
+  const wantsToppingEdit =
+    /\b(them|bo sung|doi|sua)\b/.test(normalizedRaw) && (hasExplicitToppingWords || hasToppingPayload);
+
+  if (wantsToppingEdit) {
+    session.stage = STAGE.ASK_ADD_MORE;
     const toppingUpdate = tryUpdateLastItemToppings(session, text, hint, normalizedRaw);
     if (toppingUpdate) {
-      return finalize({
-        reply: toppingUpdate.reply,
-        stage: session.stage
-      });
+      return finalize({ reply: toppingUpdate.reply, stage: session.stage });
     }
-
-    const draft = startItemDraft(text, hint);
-    if (draft) {
-      session.currentItem = draft;
-      session.stage = STAGE.COLLECTING_ITEM;
-      return finalize({ reply: collectMissingItemFields(session, text, hint), stage: session.stage });
-    }
-    if (hint?.intent === "order" || isConfirmLike(rawText, hint)) {
-      session.stage = STAGE.COLLECTING_ITEM;
-      return finalize({
-        reply: "Mình sẵn sàng lên món tiếp theo nè, bạn nhắn món bạn muốn gọi giúp mình nhé.",
-        stage: session.stage
-      });
-    }
-    if (isDenyLike(rawText, hint)) {
-      session.stage = STAGE.CONFIRM_ORDER;
-      return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
-    }
-    return finalize({ reply: askAddMore(), stage: session.stage });
+    return finalize({ reply: askToppingClarify(), stage: session.stage });
   }
 
-  if (session.stage === STAGE.CONFIRM_ORDER) {
-    if (isConfirmLike(rawText, hint)) {
-      session.stage = STAGE.COLLECT_CUSTOMER_NAME;
-      return finalize({ reply: askName(), stage: session.stage });
-    }
-    if (isDenyLike(rawText, hint)) {
-      session.stage = STAGE.COLLECTING_ITEM;
-      return finalize({
-        reply: "Bạn muốn chỉnh đơn theo hướng nào? Bạn có thể nhắn món cần thêm/sửa, hoặc nhắn `reset` để làm lại đơn mới.",
-        stage: session.stage
-      });
-    }
-    return finalize({ reply: askConfirmOrder(), stage: session.stage });
+  if (isConfirmLike(rawText, hint)) {
+    session.stage = STAGE.COLLECT_CUSTOMER_NAME;
+    return finalize({ reply: askName(), stage: session.stage });
+  }
+  if (isDenyLike(rawText, hint)) {
+    session.stage = STAGE.COLLECTING_ITEM;
+    return finalize({ reply: askEditOrderDirection(), stage: session.stage });
+  }
+  return finalize({ reply: askConfirmOrder(), stage: session.stage });
+}
+
+function handleCollectCustomerNameState(session, finalize, rawText) {
+  session.customer.name = rawText;
+  session.stage = STAGE.COLLECT_CUSTOMER_PHONE;
+  return finalize({ reply: askPhone(), stage: session.stage });
+}
+
+function handleCollectCustomerPhoneState(session, finalize, rawText) {
+  const phone = rawText.replace(/[^\d]/g, "");
+  if (phone.length < 9 || phone.length > 11) {
+    return finalize({ reply: invalidPhone(), stage: session.stage });
+  }
+  session.customer.phone = phone;
+  if (session.customer.address && session.customer.address !== "Tự đến lấy") {
+    session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
+    return finalize({
+      reply: acknowledgePreviousAddress(session.customer.address, askNote()),
+      stage: session.stage
+    });
   }
 
-  if (session.stage === STAGE.COLLECT_CUSTOMER_NAME) {
-    session.customer.name = rawText;
-    session.stage = STAGE.COLLECT_CUSTOMER_PHONE;
-    return finalize({ reply: askPhone(), stage: session.stage });
-  }
+  session.stage = STAGE.COLLECT_CUSTOMER_ADDRESS;
+  return finalize({ reply: askAddress(), stage: session.stage });
+}
 
-  if (session.stage === STAGE.COLLECT_CUSTOMER_PHONE) {
-    const phone = rawText.replace(/[^\d]/g, "");
-    if (phone.length < 9 || phone.length > 11) {
-      return finalize({ reply: invalidPhone(), stage: session.stage });
-    }
-    session.customer.phone = phone;
+function handleCollectCustomerAddressState(session, finalize, rawText, normalizedRaw2) {
+  if (/\b(o tren|ở trên|da gui truoc|đã gửi trước|noi o tren|nói ở trên)\b/.test(normalizedRaw2)) {
     if (session.customer.address && session.customer.address !== "Tự đến lấy") {
       session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
       return finalize({
-        reply: `Mình đã ghi nhận địa chỉ bạn gửi trước đó: ${session.customer.address}.\n${askNote()}`,
+        reply: retrievePreviousAddress(session.customer.address, askNote()),
         stage: session.stage
       });
     }
-
-    session.stage = STAGE.COLLECT_CUSTOMER_ADDRESS;
-    return finalize({
-      reply: askAddress(),
-      stage: session.stage
-    });
+    return finalize({ reply: askAddressRetry(), stage: session.stage });
   }
 
-  if (session.stage === STAGE.COLLECT_CUSTOMER_ADDRESS) {
-    const normalizedRaw2 = normalizeText(rawText);
-    if (/\b(o tren|ở trên|da gui truoc|đã gửi trước|noi o tren|nói ở trên)\b/.test(normalizedRaw2)) {
-      if (session.customer.address && session.customer.address !== "Tự đến lấy") {
-        session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
-        return finalize({
-          reply: `Mình lấy lại địa chỉ bạn đã gửi: ${session.customer.address}.\n${askNote()}`,
-          stage: session.stage
-        });
-      }
-      return finalize({
-        reply: askAddressRetry(),
-        stage: session.stage
-      });
-    }
-
-    if (/tu den lay|tu lay|den lay|lay tai quan/.test(normalizedRaw2)) {
-      session.customer.address = "Tự đến lấy";
-      session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
-      return finalize({
-        reply: askNote(),
-        stage: session.stage
-      });
-    }
-
-    if (/\b(giao|ship)\b/.test(normalizedRaw2) && !isLikelyAddressText(rawText)) {
-      return finalize({
-        reply: askDeliveryAddress(),
-        stage: session.stage
-      });
-    }
-
-    const hasAddressKeyword =
-      /\b(so|duong|hem|ngo|ngach|ap|thon|khu|quan|huyen|phuong|xa|tp|tinh|p\\.|q\\.|block|toa|chung cu)\b/.test(
-        normalizedRaw2
-      );
-    const hasStreetNumber = /\d/.test(rawText);
-    const wordCount = normalizedRaw2.split(/\s+/).filter(Boolean).length;
-    const validAddress = (hasAddressKeyword && wordCount >= 3) || (hasStreetNumber && wordCount >= 3);
-
-    if (!validAddress) {
-      return finalize({
-        reply: askAddressRetry(),
-        stage: session.stage
-      });
-    }
-
-    session.customer.address = cleanAddressCandidate(rawText) || rawText;
+  if (/tu den lay|tu lay|den lay|lay tai quan/.test(normalizedRaw2)) {
+    session.customer.address = "Tự đến lấy";
     session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
-    return finalize({
-      reply: askNote(),
-      stage: session.stage
-    });
+    return finalize({ reply: askNote(), stage: session.stage });
   }
 
-  if (session.stage === STAGE.COLLECT_CUSTOMER_NOTE) {
-    session.customer.note = isDenyLike(rawText, hint) ? null : rawText;
-    session.stage = STAGE.COLLECT_PAYMENT;
-    return finalize({ reply: askPayment(), stage: session.stage });
+  if (/\b(giao|ship)\b/.test(normalizedRaw2) && !isLikelyAddressText(rawText)) {
+    return finalize({ reply: askDeliveryAddress(), stage: session.stage });
   }
 
-  if (session.stage === STAGE.COLLECT_PAYMENT) {
-    if (hint?.intent === "payment_cod" || (!hasNluIntent(hint) && (/cod/.test(normalizedRaw) || normalizedRaw.includes("khi nhan")))) {
-      session.paymentMethod = "COD";
-      session.paymentStatus = "pending";
-    } else if (
-      hint?.intent === "payment_transfer" ||
-      (!hasNluIntent(hint) && (normalizedRaw.includes("chuyen khoan") || normalizedRaw.includes("transfer")))
-    ) {
-      session.paymentMethod = "transfer";
-      session.paymentStatus = "pending";
-    } else {
-      return finalize({ reply: askPaymentChoice(), stage: session.stage });
-    }
+  const hasAddressKeyword =
+    /\b(so|duong|hem|ngo|ngach|ap|thon|khu|quan|huyen|phuong|xa|tp|tinh|p\\.|q\\.|block|toa|chung cu)\b/.test(
+      normalizedRaw2
+    );
+  const hasStreetNumber = /\d/.test(rawText);
+  const wordCount = normalizedRaw2.split(/\s+/).filter(Boolean).length;
+  const validAddress = (hasAddressKeyword && wordCount >= 3) || (hasStreetNumber && wordCount >= 3);
 
-    const order = buildOrderJson(session);
-
-    if (session.paymentMethod === "transfer" && isPayOSConfigured()) {
-      try {
-        const payosOrderCode = createPayOSOrderCode();
-        const paymentLink = await createPaymentLink({
-          orderCode: payosOrderCode,
-          amount: order.total,
-          description: `DH ${order.order_id}`,
-          items: toPayOSItems(session.cart),
-          buyerName: order.customer.name,
-          buyerPhone: order.customer.phone,
-          buyerAddress: order.customer.address
-        });
-
-        order.payment_provider = "payOS";
-        order.payos_order_code = payosOrderCode;
-        order.payos_payment_link_id = paymentLink.paymentLinkId;
-        order.payos_checkout_url = paymentLink.checkoutUrl;
-        order.payos_qr_code = paymentLink.qrCode;
-        order.payos_qr_image_url = `${APP_BASE_URL}/api/payments/qr/${payosOrderCode}.png`;
-
-        registerPayOSOrder(payosOrderCode, customerId, order);
-
-        session.latestOrder = order;
-        session.stage = STAGE.FINALIZED;
-
-        return finalize({
-          reply:
-            `${paymentCreatedPayOS(order)}\n` +
-            `Mã thanh toán: ${payosOrderCode}\n` +
-            `Tổng tiền: ${formatVnd(order.total)}\n` +
-            `Nội dung chuyển khoản: DH ${order.order_id}\n` +
-            `Link thanh toán: ${paymentLink.checkoutUrl}\n` +
-            "Mình gửi kèm ảnh QR ngay bên dưới để bạn quét nhanh. Shop sẽ tự động ghi nhận khi thanh toán thành công.",
-          stage: session.stage,
-          order,
-          telegram: {
-            photoQrCode: paymentLink.qrCode,
-            qrPhotoCaption:
-              `QR chuyển khoản đơn ${order.order_id}\n` +
-              `Số tiền: ${formatVnd(order.total)}\n` +
-              `Nội dung CK: DH ${order.order_id}`
-          }
-        });
-      } catch (error) {
-        session.latestOrder = order;
-        session.stage = STAGE.FINALIZED;
-        persistOrder(customerId, order);
-        return finalize({
-          reply:
-            `${payosCreateFailed(order.order_id)}\n` +
-            "Bạn thử lại thanh toán sau hoặc chọn COD giúp mình nhé.",
-          stage: session.stage,
-          order
-        });
-      }
-    }
-
-    persistOrder(customerId, order);
-    session.latestOrder = order;
-    session.stage = STAGE.FINALIZED;
-    const transferLine =
-      session.paymentMethod === "transfer"
-        ? "\nHiện chưa cấu hình PayOS, shop sẽ gửi thông tin chuyển khoản thủ công."
-        : "";
-    const isPickup = normalizeText(session.customer.address) === normalizeText("Tự đến lấy");
-    const transferSuffix = transferLine ? `${transferLine}\n` : "\n";
-
-    return finalize({
-      reply:
-        `${orderConfirmed({
-          orderId: order.order_id,
-          totalFormatted: formatVnd(order.total),
-          paymentMethod: order.payment_method,
-          isPickup
-        })}\n` + `${transferSuffix}` + "Cảm ơn bạn nhiều nhé! 😊",
-      stage: session.stage,
-      order
-    });
+  if (!validAddress) {
+    return finalize({ reply: askAddressRetry(), stage: session.stage });
   }
 
-  return finalize({ reply: unknown(), stage: session.stage });
+  session.customer.address = cleanAddressCandidate(rawText) || rawText;
+  session.stage = STAGE.COLLECT_CUSTOMER_NOTE;
+  return finalize({ reply: askNote(), stage: session.stage });
 }
+
+function handleCollectCustomerNoteState(session, finalize, rawText, hint) {
+  session.customer.note = isDenyLike(rawText, hint) ? null : rawText;
+  session.stage = STAGE.COLLECT_PAYMENT;
+  return finalize({ reply: askPayment(), stage: session.stage });
+}
+
+async function handleCollectPaymentState(customerId, session, finalize, rawText, hint, normalizedRaw) {
+  if (hint?.intent === "payment_cod" || (!hasNluIntent(hint) && (/cod/.test(normalizedRaw) || normalizedRaw.includes("khi nhan")))) {
+    session.paymentMethod = "COD";
+    session.paymentStatus = "pending";
+  } else if (
+    hint?.intent === "payment_transfer" ||
+    (!hasNluIntent(hint) && (normalizedRaw.includes("chuyen khoan") || normalizedRaw.includes("transfer")))
+  ) {
+    session.paymentMethod = "transfer";
+    session.paymentStatus = "pending";
+  } else {
+    return finalize({ reply: askPaymentChoice(), stage: session.stage });
+  }
+
+  const order = buildOrderJson(session);
+
+  if (session.paymentMethod === "transfer" && isPayOSConfigured()) {
+    try {
+      const payosOrderCode = createPayOSOrderCode();
+      const paymentLink = await createPaymentLink({
+        orderCode: payosOrderCode,
+        amount: order.total,
+        description: `DH ${order.order_id}`,
+        items: toPayOSItems(session.cart),
+        buyerName: order.customer.name,
+        buyerPhone: order.customer.phone,
+        buyerAddress: order.customer.address
+      });
+
+      order.payment_provider = "payOS";
+      order.payos_order_code = payosOrderCode;
+      order.payos_payment_link_id = paymentLink.paymentLinkId;
+      order.payos_checkout_url = paymentLink.checkoutUrl;
+      order.payos_qr_code = paymentLink.qrCode;
+      order.payos_qr_image_url = `${APP_BASE_URL}/api/payments/qr/${payosOrderCode}.png`;
+
+      registerPayOSOrder(payosOrderCode, customerId, order);
+
+      session.latestOrder = order;
+      session.stage = STAGE.FINALIZED;
+
+      return finalize({
+        reply:
+          `${paymentCreatedPayOS(order)}\n` +
+          `Mã thanh toán: ${payosOrderCode}\n` +
+          `Tổng tiền: ${formatVnd(order.total)}\n` +
+          `Nội dung chuyển khoản: DH ${order.order_id}\n` +
+          `Link thanh toán: ${paymentLink.checkoutUrl}\n` +
+          "Mình gửi kèm ảnh QR ngay bên dưới để bạn quét nhanh. Shop sẽ tự động ghi nhận khi thanh toán thành công. Cảm ơn bạn nhiều nhé! 😊",
+        stage: session.stage,
+        order,
+        telegram: {
+          photoQrCode: paymentLink.qrCode,
+          qrPhotoCaption:
+            `QR chuyển khoản đơn ${order.order_id}\n` +
+            `Số tiền: ${formatVnd(order.total)}\n` +
+            `Nội dung CK: DH ${order.order_id}`
+        }
+      });
+    } catch (error) {
+      session.latestOrder = order;
+      session.stage = STAGE.FINALIZED;
+      persistOrder(customerId, order);
+      return finalize({
+        reply:
+          `${payosCreateFailed(order.order_id)}\n` +
+          "Bạn thử lại thanh toán sau hoặc chọn COD giúp mình nhé.",
+        stage: session.stage,
+        order
+      });
+    }
+  }
+
+  persistOrder(customerId, order);
+  session.latestOrder = order;
+  session.stage = STAGE.FINALIZED;
+  const transferLine =
+    session.paymentMethod === "transfer"
+      ? manualTransferNotice()
+      : "";
+  const isPickup = normalizeText(session.customer.address) === normalizeText("Tự đến lấy");
+  const transferSuffix = transferLine ? `${transferLine}\n` : "\n";
+
+  return finalize({
+    reply:
+      `${orderConfirmed({
+        orderId: order.order_id,
+        totalFormatted: formatVnd(order.total),
+        paymentMethod: order.payment_method,
+        isPickup
+      })}\n` + `${transferSuffix}` + "Cảm ơn bạn nhiều nhé! 😊",
+    stage: session.stage,
+    order
+  });
+}
+
 
 module.exports = {
   handleMessage,

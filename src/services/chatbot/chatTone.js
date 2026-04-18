@@ -6,201 +6,201 @@ function oneOf(options) {
 
 function askSize() {
   return oneOf([
-    "Mình lên món ngay nè, bạn chốt size M hoặc L giúp mình 🧋",
-    "Món này bạn chọn size M hay L để mình làm liền nha.",
-    "Cho mình xin size (M/L), mình thêm vào đơn ngay cho bạn."
+    "Sốp lên món ngay nè, khách chốt size M hoặc L giúp Castea nha 🧋",
+    "Món này khách chọn size M hay L để sốp làm liền nha.",
+    "Cho sốp xin size (M/L), sốp thêm vào đơn ngay cho khách."
   ]);
 }
 
 function askQuantity() {
   return oneOf([
-    "Bạn lấy mấy ly nhé? 👌",
-    "Số lượng bạn muốn là bao nhiêu ạ?",
-    "Cho mình xin số lượng giúp bạn nha."
+    "Khách lấy mấy ly nè? 👌",
+    "Số lượng khách muốn là bao nhiêu ạ?",
+    "Cho sốp xin số lượng nha khách ui."
   ]);
 }
 
 function askToppingMissing() {
   return oneOf([
-    "Bạn muốn thêm topping gì cho món này không ạ?",
-    "Bạn dặn topping giúp mình nhé, mình cập nhật ngay cho bạn.",
-    "Món này bạn muốn thêm topping gì nữa nè?"
+    "Khách muốn thêm topping gì cho món này hong ạ?",
+    "Khách dặn topping giúp sốp nhé, sốp cập nhật ngay cho khách nà.",
+    "Món này khách muốn thêm topping gì nữa nè?"
   ]);
 }
 
 function itemAdded(last) {
   return oneOf([
-    `Mình đã thêm ${last.name} size ${last.size} x${last.quantity} ✅ Bạn muốn thêm món gì nữa cứ nhắn tiếp giúp mình nha.`,
-    `${last.name} size ${last.size} x${last.quantity} đã vào giỏ rồi nè. Bạn cần thêm món nào mình lên tiếp luôn.`,
-    `Okie, ${last.name} size ${last.size} x${last.quantity} đã được thêm. Mình đợi món tiếp theo của bạn nhé.`
+    `Sốp đã thêm ${last.name} size ${last.size} x${last.quantity} ✅ Khách cần gọi thêm thì nhắn món tiếp theo, hoặc nhắn \`không\` để sốp chốt đơn nhe.`,
+    `${last.name} size ${last.size} x${last.quantity} đã vào giỏ rồi nè. Khách nhắn món tiếp theo bất cứ lúc nào, hoặc nhắn \`không\` để chốt đơn.`,
+    `Okiela, ${last.name} size ${last.size} x${last.quantity} đã được thêm. Khách cần gọi thêm thì nhắn tiếp giúp sốp, hoặc nhắn \`không\` để chốt đơn.`
   ]);
 }
 
 function askToppingClarify() {
   return oneOf([
-    "Mình chưa rõ topping bạn muốn thêm cho món vừa rồi, bạn nhắn lại giúp mình nhé.",
-    "Bạn nói rõ giúp mình topping cần thêm để mình cập nhật chuẩn hơn nha.",
-    "Mình chưa bắt được tên topping, bạn nhắn lại giúp mình một lần nữa nhé."
+    "Sốp chưa rõ topping khách muốn thêm, khách nhắn lại giúp Castea nhe.",
+    "Khách iu nói rõ giúp sốp topping cần thêm để sốp cập nhật chuẩn hơn nha.",
+    "Castea chưa bắt được tên topping, khách nhắn lại giúp sốp một lần nữa nhe."
   ]);
 }
 
 function toppingUpdated(lastItem) {
   return oneOf([
-    `Okie, mình đã cập nhật topping cho ${lastItem.name} size ${lastItem.size} x${lastItem.quantity}. Bạn muốn thêm món khác không? (có/không)`,
-    `Mình thêm topping cho ${lastItem.name} xong rồi nha. Bạn có muốn gọi thêm món không? (có/không)`,
-    `Đã chỉnh topping cho ${lastItem.name} rồi ✅ Bạn muốn thêm món nữa không? (có/không)`
+    `Okiela, sốp đã cập nhật topping cho ${lastItem.name} size ${lastItem.size} x${lastItem.quantity}. Khách cần gọi thêm thì nhắn tiếp, hoặc nhắn \`không\` để chốt đơn.`,
+    `Sốp thêm topping cho ${lastItem.name} xong rồi nha. Khách nhắn món tiếp theo khi cần, hoặc nhắn \`không\` để chốt đơn.`,
+    `Đã chỉnh topping cho ${lastItem.name} rồi ✅ Khách cần gọi thêm thì nhắn tiếp giúp Castea, hoặc nhắn \`không\` để chốt đơn.`
   ]);
 }
 
 function greetingOpen() {
   return oneOf([
-    "Chào bạn 😊 Bạn muốn xem menu hay đặt món luôn nè?",
-    "Hello bạn ơi, mình sẵn sàng nhận đơn. Bạn muốn xem menu hay gọi món luôn?",
-    "Mình ở đây nè 👋 Bạn muốn xem menu hay đặt món luôn cho nhanh?"
+    "Rất vui được phục vụ khách hôm nay 🌟 Khách muốn xem menu hay gọi món luôn nè?",
+    "Chào mừng khách đến với Castea 💛 Sốp sẵn sàng nhận đơn ngay, khách muốn xem menu hay gọi món luôn?",
+    "Hello khách iu ✨ Cảm ơn khách đã ghé Castea. Khách muốn xem menu trước hay đặt món luôn cho sốp nhe?"
   ]);
 }
 
 function askItemName() {
   return oneOf([
-    "Bạn gọi món nào thì nhắn mình tên món giúp mình nha.",
-    "Cho mình biết món bạn muốn gọi để mình lên đơn nhé.",
-    "Bạn muốn dùng món gì, nhắn mình để mình thêm vào đơn liền nè."
+    "Khách gọi món nào thì nhắn tên món giúp sốp nha.",
+    "Cho Castea biết món khách muốn gọi để sốp lên đơn nhé.",
+    "Khách muốn dùng món gì, nhắn sốp để sốp thêm vào đơn liền nè."
   ]);
 }
 
 function askAddMore() {
   return oneOf([
-    "Bạn muốn thêm món nào nữa thì nhắn luôn giúp mình nhé.",
-    "Mình đang đợi món tiếp theo của bạn nè.",
-    "Nếu cần gọi thêm, bạn nhắn món tiếp theo để mình lên đơn luôn nha."
+    "Khách có thể nhắn món tiếp theo bất cứ lúc nào, hoặc nhắn `không` để Castea chốt đơn.",
+    "Cần gọi thêm thì nhắn món tiếp theo giúp sốp, hoặc nhắn `không` để chốt đơn.",
+    "Khách nhắn tiếp món nếu cần, còn hong thì nhắn `không` để sốp chốt đơn liền nha."
   ]);
 }
 
 function askConfirmOrder() {
   return oneOf([
-    "Bạn xem giúp mình, nếu ổn thì nhắn `đúng`, cần sửa thì nhắn `chưa đúng` nha.",
-    "Mình gửi bạn bản chốt đơn rồi nè: ok thì nhắn `đúng`, muốn chỉnh thì nhắn `chưa đúng`.",
-    "Mình chờ bạn xác nhận đơn: nhắn `đúng` để tiếp tục, hoặc `chưa đúng` để mình sửa ngay."
+    "Khách xem giúp sốp, nếu ổn thì nhắn `đúng`, cần sửa thì nhắn `chưa đúng` nha.",
+    "Sốp gửi khách bản chốt đơn rồi nè: okiela thì nhắn `đúng`, muốn chỉnh thì nhắn `chưa đúng`.",
+    "Castea chờ khách xác nhận đơn: nhắn `đúng` để tiếp tục, hoặc `chưa đúng` để sốp sửa liền."
   ]);
 }
 
 function askName() {
   return oneOf([
-    "Mình xin tên người nhận để chốt đơn cho chuẩn nhé 😊",
-    "Bạn gửi mình tên người nhận giúp mình nha.",
-    "Cho mình tên người nhận, mình đi tiếp bước xác nhận liền nè."
+    "Sốp xin tên người nhận để chốt đơn cho chuẩn nhé khách iu 😊",
+    "Khách gửi sốp tên người nhận nha.",
+    "Cho Castea tên người nhận, sốp đi tiếp bước xác nhận liền nè."
   ]);
 }
 
 function askPhone() {
   return oneOf([
-    "Bạn gửi mình số điện thoại nhận hàng giúp mình nhé 📱",
-    "Cho mình xin SĐT người nhận để tài xế liên hệ nhanh nha.",
-    "Mình cần số điện thoại người nhận, bạn nhắn giúp mình là xong bước này."
+    "Khách gửi sốp số điện thoại nhận hàng nhe 📱",
+    "Cho Castea xin SĐT khách để shipper liên hệ lẹ nha.",
+    "Sốp cần số điện thoại nhận hàng, khách nhắn giúp sốp là chốt xong bước này gòi."
   ]);
 }
 
 function invalidPhone() {
   return oneOf([
-    "Số điện thoại này chưa hợp lệ, bạn kiểm tra lại giúp mình nhé.",
-    "Mình thấy SĐT hơi sai định dạng, bạn gửi lại giúp mình nha.",
-    "SĐT chưa đúng rồi, bạn nhập lại giúp mình nhé."
+    "SĐT này chưa hợp lệ rùi, khách kiểm tra lại giúp sốp nhe.",
+    "Sốp thấy SĐT hơi sai sai, khách iu gửi lại giúp Castea nha.",
+    "SĐT chưa chuẩn gòi, khách nhập lại giúp sốp nhé."
   ]);
 }
 
 function askAddress() {
   return oneOf([
-    "Bạn muốn giao tận nơi hay tự đến lấy để mình chuẩn bị đúng giúp bạn ạ?",
-    "Mình nhận cả giao tận nơi và tự lấy, bạn cho mình biết cách nhận hàng nhé.",
-    "Bạn chọn giúp mình hình thức nhận hàng: giao tận nơi hay ghé lấy tại quán."
+    "Khách muốn giao tận nơi hay tự đến lấy để Castea chuẩn bị cho chuẩn ạ?",
+    "Sốp có cả giao tận nơi và tự lấy, khách chốt cách nhận hàng nhe.",
+    "Khách chọn giúp sốp nha: giao tận nơi hay ghé Castea lấy lun."
   ]);
 }
 
 function askAddressRetry() {
   return oneOf([
-    "Bạn gửi mình địa chỉ nhận hàng chi tiết (số nhà + tên đường) để mình giao chính xác nhé.",
-    "Cho mình xin địa chỉ cụ thể hơn một chút để tài xế dễ tìm bạn nha.",
-    "Bạn nhắn giúp mình địa chỉ đầy đủ hơn để mình chốt giao nhanh cho bạn nhé."
+    "Khách gửi sốp địa chỉ chi tiết (số nhà + tên đường) để sốp giao trúng phóc nhe.",
+    "Cho Castea xin địa chỉ cụ thể xíu xiu để shipper dễ tìm khách nha.",
+    "Khách nhắn giúp sốp địa chỉ đầy đủ hơn để sốp lên đơn giao lẹ nhe."
   ]);
 }
 
 function askDeliveryAddress() {
   return oneOf([
-    "Oke bạn, cho mình xin địa chỉ giao hàng cụ thể (số nhà + tên đường) nhé.",
-    "Mình nhận giao tận nơi nha, bạn gửi địa chỉ chi tiết giúp mình để chốt đơn.",
-    "Chuẩn luôn, bạn nhắn địa chỉ giao hàng đầy đủ để mình lên đơn giao ngay."
+    "Okiela khách, cho sốp xin địa chỉ giao hàng cụ thể (số nhà + tên đường) nhe.",
+    "Castea nhận giao tận nơi lun, khách gửi địa chỉ chi tiết giúp sốp để chốt bill.",
+    "Khách nhắn địa chỉ đầy đủ để sốp lên đơn giao cho lẹ nha."
   ]);
 }
 
 function askNote() {
   return oneOf([
-    "Bạn dặn thêm giúp mình nhé (ví dụ: ít đường, ít đá, dị ứng...).",
-    "Bạn có lưu ý gì cho quán cứ nhắn luôn, mình ghi nhận đầy đủ cho bạn.",
-    "Nếu không có ghi chú thêm, bạn chỉ cần nhắn `không` là được nha."
+    "Khách có dặn thêm gì hông (như ít đường, ít đá...).",
+    "Khách có lưu ý gì cho Castea cứ nhắn nha, sốp ghi chú lại hết nà.",
+    "Nếu hong có ghi chú thêm, khách cứ nhắn `không` là xong gòi."
   ]);
 }
 
 function askPayment() {
   return oneOf([
-    "Bạn muốn thanh toán khi nhận hàng hay chuyển khoản trước ạ? 💳",
-    "Mình qua bước thanh toán nè, bạn cho mình chọn thanh toán giúp mình nhé.",
-    "Đến bước thanh toán rồi, bạn chọn cách nào tiện cho bạn nhất nha."
+    "Khách muốn COD nhận hàng hay chuyển khoản trước ạ? 💳",
+    "Sốp qua bước thanh toán nè, khách chọn hình thức giúp sốp nhe.",
+    "Tới bước thanh toán gòi, khách chọn cách nào tiện nhất cho khách nha."
   ]);
 }
 
 function askPaymentChoice() {
   return oneOf([
-    "Mình chưa xác định được hình thức thanh toán, bạn nhắn lại giúp mình nhé.",
-    "Bạn cho mình biết bạn muốn thanh toán khi nhận hàng hay chuyển khoản nha.",
-    "Mình cần xác nhận lại cách thanh toán để chốt đơn cho bạn."
+    "Sốp chưa rõ hình thức thanh toán, khách nhắn lại giúp Castea nhé.",
+    "Khách cho sốp biết muốn COD hay chuyển khoản nè.",
+    "Castea cần xác nhận lại cách thanh toán để chốt đơn cho khách nha."
   ]);
 }
 
 function resetDone() {
   return oneOf([
-    "Mình đã reset phiên đặt hàng cho bạn. Bạn muốn xem menu hay đặt món luôn ạ? 😊",
-    "Xong rồi nha, mình đã làm mới đơn. Bạn muốn xem menu hay gọi món luôn?",
-    "Mình đã reset xong. Bây giờ bạn muốn xem menu hay đặt món luôn nè?"
+    "Sốp đã reset phiên gòi nha. Khách muốn xem menu hay đặt món luôn ạ? 😊",
+    "Xong gòi nè, Castea đã làm mới đơn. Khách muốn xem menu hay gọi món nà?",
+    "Sốp reset xong rùi. Giờ khách muốn nghía menu hay đặt món liền nè?"
   ]);
 }
 
 function readyNewOrder() {
   return oneOf([
-    "Mình sẵn sàng nhận đơn mới. Bạn muốn xem menu hay đặt món luôn ạ? 😊",
-    "Ok nè, mình quay về đơn mới rồi. Bạn muốn xem menu hay gọi luôn?",
-    "Mình đã sẵn sàng cho đơn mới. Bạn muốn bắt đầu từ menu hay gọi món luôn?"
+    "Sốp sẵn sàng nhận đơn mới nà. Khách muốn xem menu hay chốt món luôn? 😊",
+    "Okiela, sốp quay lại đơn mới gòi. Khách xem menu hay gọi luôn nà?",
+    "Castea sẵn sàng gòi nha. Khách xem menu hay gọi món lun nè?"
   ]);
 }
 
 function cancelDone() {
   return oneOf([
-    "Mình đã hủy đơn hiện tại cho bạn. Khi cần đặt lại, bạn nhắn `menu` hoặc tên món nhé.",
-    "Đã hủy đơn xong rồi nha. Lúc nào bạn muốn đặt lại thì nhắn `menu` hoặc tên món giúp mình.",
-    "Mình hủy đơn giúp bạn rồi. Bạn muốn đặt lại thì gọi mình bất cứ lúc nào nhé."
+    "Sốp đã hủy đơn hiện tại cho khách gòi. Khi nào lên đơn lại, khách cứ nhắn `menu` nha.",
+    "Đã hủy đơn rùi nà. Lúc nào khách iu đặt lại thì nhắn `menu` giúp Castea nhe.",
+    "Sốp hủy đơn giúp khách gòi. Khách muốn đặt lại thì ới sốp bất cứ lúc nào nha."
   ]);
 }
 
 function unknown() {
   return oneOf([
-    "Mình chưa hiểu ý bạn lắm, bạn nhắn lại giúp mình nhé.",
-    "Mình chưa bắt được ý đó, bạn nói lại ngắn gọn giúp mình nha.",
-    "Cho mình xin lại câu này theo cách khác một chút nhé, để mình hỗ trợ đúng hơn."
+    "Sốp chưa bắt sóng được ý khách, khách nhắn lại giúp sốp nhe.",
+    "Castea chưa hiểu lắm, khách iu nói lại ngắn gọn xíu nha.",
+    "Khách nói lại câu này theo cách khác xíu xiu được hông, để sốp hiểu lẹ hơn nà."
   ]);
 }
 
 function paymentCreatedPayOS(order) {
   return oneOf([
-    `Mình tạo thanh toán PayOS cho đơn ${order.order_id} xong rồi nè ✅`,
-    `Ok bạn ơi, link PayOS cho đơn ${order.order_id} đã sẵn sàng ✅`,
-    `Mình đã tạo thanh toán PayOS cho đơn ${order.order_id}, bạn quét là thanh toán được ngay ✅`
+    `Sốp tạo xong link PayOS cho đơn ${order.order_id} gòi nè ✅`,
+    `Okiela khách iu, link PayOS cho đơn ${order.order_id} sẵn sàng nà ✅`,
+    `Castea đã tạo thanh toán PayOS đơn ${order.order_id}, khách quét mã là ting ting ngay ✅`
   ]);
 }
 
 function payosCreateFailed(orderId) {
   return oneOf([
-    `Mình đã xác nhận đơn ${orderId}, nhưng hiện chưa tạo được QR PayOS.`,
-    `Đơn ${orderId} mình đã nhận rồi, nhưng lúc này chưa khởi tạo được PayOS.`,
-    `Mình đã chốt đơn ${orderId}, nhưng đang lỗi tạo QR PayOS tạm thời.`
+    `Sốp đã nhận đơn ${orderId}, nhưng xui cái là chưa tạo được QR PayOS á.`,
+    `Đơn ${orderId} Castea nhận gòi, nhưng chưa nhả ra được mã PayOS.`,
+    `Sốp chốt đơn ${orderId} rùi, cơ mà hệ thống đang bị lag QR xíu xiu.`
   ]);
 }
 
@@ -208,27 +208,63 @@ function paymentReceivedThankYou(order) {
   const totalFormatted = formatVnd(order.total);
   const orderId = order.order_id;
   return oneOf([
-    `Cảm ơn bạn đã thanh toán đơn ${orderId} (${totalFormatted}). Quán luôn chào đón bạn quay lại lần sau. Chúc bạn một ngày vui vẻ! 🙏`,
-    `Shop đã nhận thanh toán cho đơn ${orderId} (${totalFormatted}) rồi ạ. Cảm ơn bạn đã tin tưởng — hẹn gặp lại bạn nhé! ❤️`,
-    `Đã xác nhận thanh toán đơn ${orderId} (${totalFormatted}). Cảm ơn bạn rất nhiều, chúc bạn một ngày tốt lành! 🙏`
+    `Cảm ơn khách iu đã thanh toán đơn ${orderId} (${totalFormatted}). Castea luôn chào đón khách nghen. Mãi iu! 💖`,
+    `Sốp đã nhận ting ting đơn ${orderId} (${totalFormatted}) gòi nà. Cảm ơn khách iu nha! ❤️`,
+    `Đã xác nhận thanh toán đơn ${orderId} (${totalFormatted}) rùi nha. Yêu khách nhiều nhìu! 🥰`
   ]);
 }
 
 function orderConfirmed({ orderId, totalFormatted, paymentMethod, isPickup }) {
-  const deliveryLine = isPickup ? "Bạn ghé lấy giúp mình khi tiện nha." : "Mình sẽ ưu tiên chuẩn bị và giao sớm cho bạn.";
+  const deliveryLine = isPickup ? "Khách ghé Castea lấy khi nào tiện nhe." : "Sốp sẽ ưu tiên chuẩn bị lẹ làng và giao tới tay khách nè.";
   if (paymentMethod === "COD") {
     return oneOf([
-      `Mình chốt đơn thành công rồi nha ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: COD\n${deliveryLine}`,
-      `Đơn của bạn đã được xác nhận ✅\nMã đơn: ${orderId}\nTổng: ${totalFormatted}\nHình thức: COD\n${deliveryLine}`,
-      `Okie, mình nhận đơn rồi ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán khi nhận (COD)\n${deliveryLine}`
+      `Sốp chốt đơn thành công rùi nha ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: COD\n${deliveryLine}`,
+      `Đơn của khách đã được Castea chốt ✅\nMã đơn: ${orderId}\nTổng: ${totalFormatted}\nHình thức: COD\n${deliveryLine}`,
+      `Okiela, sốp chốt đơn gòi ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán khi nhận (COD)\n${deliveryLine}`
     ]);
   }
 
   return oneOf([
-    `Mình chốt đơn thành công rồi nha ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: chuyển khoản\n${deliveryLine}`,
-    `Đơn của bạn đã được xác nhận ✅\nMã đơn: ${orderId}\nTổng: ${totalFormatted}\nHình thức: chuyển khoản\n${deliveryLine}`,
-    `Okie, mình nhận đơn rồi ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: chuyển khoản\n${deliveryLine}`
+    `Sốp chốt đơn thành công rùi nha ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: chuyển khoản\n${deliveryLine}`,
+    `Đơn của khách đã được Castea chốt ✅\nMã đơn: ${orderId}\nTổng: ${totalFormatted}\nHình thức: chuyển khoản\n${deliveryLine}`,
+    `Okiela, sốp chốt đơn gòi ✅\nMã đơn: ${orderId}\nTổng tiền: ${totalFormatted}\nThanh toán: chuyển khoản\n${deliveryLine}`
   ]);
+}
+
+function askMessageContent() {
+  return "Khách nhắn sốp nội dung cần hỗ trợ nhe 😊";
+}
+
+function menuPhotoCaptionText() {
+  return "📋 ĐÂY LÀ MENU CỦA SỐP NÈ\n\nKhách muốn order luôn hay cần sốp tư vấn thêm món hong ạ? 🧋";
+}
+
+function consultMenu() {
+  return oneOf([
+    "Sốp gợi ý khách thử Trà Sữa Trân Châu Đen (best-seller) mlem mlem lắm, hoặc Trà Trái Cây giải nhiệt nha! Khách ưng món nào hông nè? 🧋",
+    "Nếu khách phân vân thì quất luôn Trà Sữa Trân Châu Đen nha, món tủ của Castea đó! Hoặc Cà Phê Sữa nếu khách cần nạp năng lượng. Khách chốt món nào nà? 🥰",
+    "Khách thử Trà Sữa Trân Châu Đen hoặc Trà Trái Cây nha, chua chua ngọt ngọt cuốn lắm lun. Khách muốn thử món nào ạ? ✨"
+  ]);
+}
+
+function askNextItemOrConfirm() {
+  return "Sốp sẵn sàng lên món tiếp nà. Khách nhắn món cần gọi, hoặc nhắn `không` để sốp chốt đơn lun.";
+}
+
+function askEditOrderDirection() {
+  return "Khách muốn chỉnh đơn sao nè? Khách có thể nhắn món thêm/sửa, hoặc `reset` để sốp làm đơn mới toanh nha.";
+}
+
+function acknowledgePreviousAddress(address, askNoteStr) {
+  return `Sốp nhớ địa chỉ khách nãy đưa rùi nè: ${address}.\n${askNoteStr}`;
+}
+
+function retrievePreviousAddress(address, askNoteStr) {
+  return `Castea bưng lại địa chỉ nãy khách gửi nha: ${address}.\n${askNoteStr}`;
+}
+
+function manualTransferNotice() {
+  return "\nHiện sốp chưa cài xong PayOS, sốp sẽ gửi thông tin chuyển khoản thủ công nha.";
 }
 
 module.exports = {
@@ -258,5 +294,13 @@ module.exports = {
   paymentCreatedPayOS,
   payosCreateFailed,
   paymentReceivedThankYou,
-  orderConfirmed
+  orderConfirmed,
+  askMessageContent,
+  menuPhotoCaptionText,
+  consultMenu,
+  askNextItemOrConfirm,
+  askEditOrderDirection,
+  acknowledgePreviousAddress,
+  retrievePreviousAddress,
+  manualTransferNotice
 };

@@ -24,7 +24,11 @@ function normalizeMessage(message) {
   for (const [key, value] of Object.entries(SYNONYMS)) {
     text = text.replaceAll(key, value);
   }
-  return text.trim();
+  return text
+    .replace(/\bchan\s+trau\b/g, "tran chau")
+    .replace(/\btran\s+trau\b/g, "tran chau")
+    .replace(/\bchan\s+chau\b/g, "tran chau")
+    .trim();
 }
 
 function fallbackIntent(message) {
@@ -68,6 +72,46 @@ function extractToppingsFallback(message) {
   return TOPPINGS.filter((topping) => msg.includes(normalizeText(topping.name)));
 }
 
+function mapLineItem(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const size = raw.size === "M" || raw.size === "L" ? raw.size : null;
+  // Some NLU outputs omit quantity for "mot/một ..."; default to 1 once item is identified.
+  const quantity = Number.isFinite(raw.quantity) && raw.quantity > 0 ? Number(raw.quantity) : 1;
+  const code = normalizeText(String(raw.item_code || ""));
+  const name = normalizeText(String(raw.item_name || ""));
+  const matched =
+    MENU_ITEMS.find((item) => normalizeText(item.id) === code) ||
+    MENU_ITEMS.find((item) => {
+      const normalizedName = normalizeText(item.name);
+      return normalizedName.includes(name) || name.includes(normalizedName);
+    });
+  if (!matched) return null;
+  return {
+    item_code: matched.id,
+    item_name: matched.name,
+    size,
+    quantity,
+    topping_codes: Array.isArray(raw.topping_codes) ? raw.topping_codes : [],
+    topping_names: Array.isArray(raw.topping_names) ? raw.topping_names : []
+  };
+}
+
+function normalizeLineItems(rawLineItems) {
+  if (!Array.isArray(rawLineItems)) return [];
+  const mapped = rawLineItems.map(mapLineItem).filter(Boolean);
+  const merged = [];
+  for (const item of mapped) {
+    if (!item.size) continue;
+    const existing = merged.find((it) => it.item_code === item.item_code && it.size === item.size);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      merged.push({ ...item });
+    }
+  }
+  return merged;
+}
+
 function buildSystemInstruction(context = {}) {
   const stage = context.stage || "unknown";
   const stageHints = {
@@ -81,6 +125,25 @@ function buildSystemInstruction(context = {}) {
   const stageHintLine = stageHints[stage] || "Uu tien suy luan theo ngu canh stage hien tai.";
   const menuItems = MENU_ITEMS.map((item) => `${item.id}:${item.name}`).join(", ");
   const toppings = TOPPINGS.map((item) => `${item.id}:${item.name}`).join(", ");
+  const extractionRules =
+    "QUY TAC TACH LINE_ITEMS: " +
+    "1) Moi mon + size la 1 dong rieng. " +
+    "2) Neu cau co nhieu mon, phai tra du tung mon trong line_items. " +
+    "3) Neu nguoi dung noi mot size chung (vi du: 'size M') thi ap dung cho cac mon chua co size rieng. " +
+    "4) Neu cau chia size (vi du: '2 size L 1 size M') thi phai tao it nhat 2 dong cho cung mon. " +
+    "5) Khong tu suy dien mon ngoai menu; map ve mon gan nhat hop le. " +
+    "6) Neu chua chac, van tra line_items voi phan da chac va de null cho truong chua du thong tin. " +
+    "7) Topping cua mon nao phai de chinh xac vao topping_names cua mon do trong line_items.";
+  const examples =
+    "VI DU JSON MONG MUON: " +
+    "Input: '2 ca phe sua va 1 ca phe den size M' => " +
+    '{"intent":"order","line_items":[{"item_code":"CF02","item_name":"Cà Phê Sữa","size":"M","quantity":2},{"item_code":"CF01","item_name":"Cà Phê Đen","size":"M","quantity":1}]}. ' +
+    "Input: '3 ca phe sua, 2 size L 1 size M' => " +
+    '{"intent":"order","line_items":[{"item_code":"CF02","item_name":"Cà Phê Sữa","size":"L","quantity":2},{"item_code":"CF02","item_name":"Cà Phê Sữa","size":"M","quantity":1}]}. ' +
+    "Input: '1 tra sua size M va 1 cafe size L kem tuoi' => " +
+    '{"intent":"order","line_items":[{"item_code":"TS01","item_name":"Trà Sữa","size":"M","quantity":1},{"item_code":"CF01","item_name":"Cà Phê","size":"L","quantity":1,"topping_names":["Kem Tươi"]}]}. ' +
+    "Input: 'khong can topping' => " +
+    '{"intent":"deny","topping_codes":[],"topping_names":[]}.';
 
   return (
     "Ban la bo phan phan tich tin nhan dat do uong. " +
@@ -90,7 +153,12 @@ function buildSystemInstruction(context = {}) {
     `Danh sach mon hop le: ${menuItems}. ` +
     `Danh sach topping hop le: ${toppings}. ` +
     "Tra ve DUY NHAT JSON schema: " +
-    "{intent(menu|order|confirm|deny|provide_info|cancel|reset|payment_cod|payment_transfer|unknown), item_code, item_name, size(M|L|null), quantity(number|null), topping_codes(array), topping_names(array)}. " +
+    "{intent, item_code, item_name, size, quantity, topping_codes, topping_names, " +
+    "line_items: [{item_code, item_name, size, quantity, topping_codes, topping_names}]}. " +
+    "Neu co nhieu mon khac nhau, dien day du vao line_items. " +
+    "item_code/item_name/size/quantity la mon DAU TIEN hoac mon chinh. " +
+    `${extractionRules} ` +
+    `${examples} ` +
     "Neu nhan ra ten mon gan dung thi map ve item hop le gan nhat."
   );
 }
@@ -198,6 +266,16 @@ async function analyzeCustomerMessage(message, context = {}) {
       parsed.quantity = extractQuantityFallback(normalizedMessage);
     }
 
+    const lineItems = normalizeLineItems(parsed.line_items);
+    if (lineItems.length === 0 && parsed.item_code) {
+      lineItems.push({
+        item_code: parsed.item_code,
+        item_name: parsed.item_name,
+        size: parsed.size === "M" || parsed.size === "L" ? parsed.size : null,
+        quantity: Number.isFinite(parsed.quantity) && parsed.quantity > 0 ? parsed.quantity : null
+      });
+    }
+
     return {
       intent: parsed.intent || "unknown",
       item_code: parsed.item_code || null,
@@ -206,6 +284,7 @@ async function analyzeCustomerMessage(message, context = {}) {
       quantity: Number.isFinite(parsed.quantity) ? parsed.quantity : null,
       topping_codes: Array.isArray(parsed.topping_codes) ? parsed.topping_codes : [],
       topping_names: Array.isArray(parsed.topping_names) ? parsed.topping_names : [],
+      line_items: lineItems,
       confidence: Boolean((parsed.intent && parsed.intent !== "unknown") || parsed.item_code)
     };
   } catch (_error) {

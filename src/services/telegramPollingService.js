@@ -15,6 +15,9 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error("[telegram] getUpdates failed:", res.status, detail);
+      if (res.status === 409) {
+        return { conflict: true, detail };
+      }
       return;
     }
 
@@ -87,7 +90,14 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
   async function runLoop() {
     while (running) {
       try {
-        await pollOnce();
+        const state = await pollOnce();
+        if (state?.conflict) {
+          running = false;
+          console.error(
+            "[telegram] Polling stopped due to 409 conflict. Ensure only one bot instance runs getUpdates for this token."
+          );
+          break;
+        }
       } catch (error) {
         console.error("[telegram] polling error:", error?.message || error);
       }
@@ -99,10 +109,14 @@ function createTelegramPollingService({ token, onMessage, intervalMs = 1500 }) {
     if (running) return;
     running = true;
 
-    fetch(`https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=false`)
-      .catch((error) => console.error("[telegram] deleteWebhook failed:", error?.message || error));
-
-    loopPromise = runLoop();
+    loopPromise = (async () => {
+      try {
+        await fetch(`https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=false`);
+      } catch (error) {
+        console.error("[telegram] deleteWebhook failed:", error?.message || error);
+      }
+      await runLoop();
+    })();
   }
 
   async function stop() {
