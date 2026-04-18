@@ -126,6 +126,10 @@ function isDenyLike(rawText, hint) {
   return isNegative(rawText);
 }
 
+function hasNluIntent(hint) {
+  return Boolean(hint?.intent && hint.intent !== "unknown");
+}
+
 async function handleMessage(customerId, message) {
   const session = getSession(customerId);
   const finalize = (payload, options = {}) => {
@@ -148,10 +152,12 @@ async function handleMessage(customerId, message) {
     session.customer.address = contextualAddress;
   }
   const isCancelOrder =
-    /\bhuy don\b/.test(normalizedRaw) ||
-    /\bcancel\b/.test(normalizedRaw) ||
-    /\bthoi khong dat\b/.test(normalizedRaw) ||
-    /\bkhong dat nua\b/.test(normalizedRaw);
+    hint?.intent === "cancel" ||
+    (!hasNluIntent(hint) &&
+      (/\bhuy don\b/.test(normalizedRaw) ||
+        /\bcancel\b/.test(normalizedRaw) ||
+        /\bthoi khong dat\b/.test(normalizedRaw) ||
+        /\bkhong dat nua\b/.test(normalizedRaw)));
 
   if (isCancelOrder) {
     resetSession(customerId);
@@ -164,7 +170,7 @@ async function handleMessage(customerId, message) {
     );
   }
 
-  if (normalizedRaw === "menu" || normalizedRaw.includes("xem menu") || hint?.intent === "menu") {
+  if (hint?.intent === "menu" || (!hasNluIntent(hint) && (normalizedRaw === "menu" || /\bmenu\b/.test(normalizedRaw) || normalizedRaw.includes("xem menu")))) {
     return finalize({
       reply: "",
       telegram: {
@@ -178,7 +184,7 @@ async function handleMessage(customerId, message) {
     });
   }
 
-  if (normalizedRaw === "reset" || normalizedRaw.includes("lam lai don moi")) {
+  if (hint?.intent === "reset" || (!hasNluIntent(hint) && (normalizedRaw === "reset" || normalizedRaw.includes("lam lai don moi")))) {
     resetSession(customerId);
     return finalize(
       {
@@ -208,7 +214,7 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.COLLECTING_ITEM) {
-    if (session.cart.length > 0 && (isNegative(rawText) || hint?.intent === "deny")) {
+    if (session.cart.length > 0 && (hint?.intent === "deny" || (!hasNluIntent(hint) && isNegative(rawText)))) {
       session.stage = STAGE.CONFIRM_ORDER;
       return finalize({ reply: formatOrderSummary(session.cart), stage: session.stage });
     }
@@ -361,10 +367,13 @@ async function handleMessage(customerId, message) {
   }
 
   if (session.stage === STAGE.COLLECT_PAYMENT) {
-    if (/cod/.test(normalizedRaw) || normalizedRaw.includes("khi nhan")) {
+    if (hint?.intent === "payment_cod" || (!hasNluIntent(hint) && (/cod/.test(normalizedRaw) || normalizedRaw.includes("khi nhan")))) {
       session.paymentMethod = "COD";
       session.paymentStatus = "pending";
-    } else if (normalizedRaw.includes("chuyen khoan") || normalizedRaw.includes("transfer")) {
+    } else if (
+      hint?.intent === "payment_transfer" ||
+      (!hasNluIntent(hint) && (normalizedRaw.includes("chuyen khoan") || normalizedRaw.includes("transfer")))
+    ) {
       session.paymentMethod = "transfer";
       session.paymentStatus = "pending";
     } else {

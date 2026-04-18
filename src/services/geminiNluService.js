@@ -34,6 +34,21 @@ function fallbackIntent(message) {
   return "unknown";
 }
 
+function normalizeIntent(intent) {
+  const value = normalizeText(intent || "");
+  const map = {
+    yes: "confirm",
+    no: "deny",
+    decline: "deny",
+    reject: "deny",
+    payment_cod: "payment_cod",
+    payment_transfer: "payment_transfer",
+    transfer: "payment_transfer",
+    cod: "payment_cod"
+  };
+  return map[value] || value || "unknown";
+}
+
 function extractQuantityFallback(message) {
   const tokens = normalizeText(message || "").split(/\s+/).filter(Boolean);
   for (const token of tokens) {
@@ -75,7 +90,7 @@ function buildSystemInstruction(context = {}) {
     `Danh sach mon hop le: ${menuItems}. ` +
     `Danh sach topping hop le: ${toppings}. ` +
     "Tra ve DUY NHAT JSON schema: " +
-    "{intent(menu|order|confirm|deny|provide_info|unknown), item_code, item_name, size(M|L|null), quantity(number|null), topping_codes(array), topping_names(array)}. " +
+    "{intent(menu|order|confirm|deny|provide_info|cancel|reset|payment_cod|payment_transfer|unknown), item_code, item_name, size(M|L|null), quantity(number|null), topping_codes(array), topping_names(array)}. " +
     "Neu nhan ra ten mon gan dung thi map ve item hop le gan nhat."
   );
 }
@@ -159,7 +174,9 @@ async function analyzeCustomerMessage(message, context = {}) {
 
     if (!parsed || typeof parsed !== "object") return null;
 
-    if (!parsed.intent || parsed.intent === "unknown") {
+    parsed.intent = normalizeIntent(parsed.intent);
+
+    if (!parsed.intent) {
       parsed.intent = fallbackIntent(normalizedMessage);
     }
 
