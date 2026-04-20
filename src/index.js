@@ -46,6 +46,21 @@ const TELEGRAM_MODE = (process.env.TELEGRAM_MODE || "webhook").toLowerCase();
 const TELEGRAM_DEDUP_TTL_MS = 10 * 60 * 1000;
 const processedTelegramMessages = new Map();
 
+async function setTelegramWebhook(token, webhookUrl) {
+  const url = `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.ok) {
+      console.log("Telegram webhook set successfully:", webhookUrl);
+    } else {
+      console.error("Failed to set Telegram webhook:", data.description);
+    }
+  } catch (error) {
+    console.error("Error setting Telegram webhook:", error.message);
+  }
+}
+
 function buildTelegramDedupKey(chatId, messageId) {
   if (chatId == null || messageId == null) return null;
   return `${chatId}:${messageId}`;
@@ -453,6 +468,11 @@ app.get("/api/payments/qr/:orderCode.png", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Chatbot backend dang chay tai http://localhost:${PORT}`);
+
+  if (TELEGRAM_MODE === "webhook" && TELEGRAM_BOT_TOKEN) {
+    const webhookUrl = `${process.env.APP_BASE_URL || `http://localhost:${PORT}`}/webhooks/telegram`;
+    setTelegramWebhook(TELEGRAM_BOT_TOKEN, webhookUrl);
+  }
 
   if (TELEGRAM_MODE === "polling" && TELEGRAM_BOT_TOKEN) {
     const polling = createTelegramPollingService({
